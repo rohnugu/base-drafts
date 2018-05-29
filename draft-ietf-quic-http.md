@@ -193,12 +193,12 @@ token "hq" in the TLS handshake.  Support for other application-layer protocols
 MAY be offered in the same handshake.
 
 While connection-level options pertaining to the core QUIC protocol are set in
-the initial crypto handshake, HTTP-specific settings are conveyed
-in the SETTINGS frame. After the QUIC connection is established, a SETTINGS
-frame ({{frame-settings}}) MUST be sent by each endpoint as the initial frame
-of their respective HTTP control stream (Stream ID 2 or 3, see
-{{stream-mapping}}). The server MUST NOT send data on any other stream until
-the client's SETTINGS frame has been received.
+the initial crypto handshake, HTTP-specific settings are conveyed in the
+SETTINGS frame. After the QUIC connection is established, a SETTINGS frame
+({{frame-settings}}) MUST be sent by each endpoint as the initial frame of their
+respective HTTP control stream (see {{control-streams}}). The server MUST NOT
+send data on any other stream until the client's SETTINGS frame has been
+received.
 
 ### Draft Version Identification
 
@@ -1186,7 +1186,7 @@ frames). Redefinition of the encoding of extension frame types might be
 necessary if the encoding includes a Stream ID.
 
 Other than this issue, frame type HTTP/2 extensions are typically portable to
-QUIC simply by replacing Stream 0 in HTTP/2 with Stream 2 or 3 in HTTP/QUIC.
+QUIC simply by replacing Stream 0 in HTTP/2 with a control stream in HTTP/QUIC.
 HTTP/QUIC extensions will not assume ordering, but would not be harmed by
 ordering, and would be portable to HTTP/2 in the same manner.
 
