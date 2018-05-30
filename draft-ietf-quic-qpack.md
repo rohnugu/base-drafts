@@ -487,9 +487,9 @@ server's header blocks and table updates.
 
 After processing a set of instructions on the encoder stream, the decoder will
 emit a Table State Synchronize instruction on the decoder stream.  The
-instruction begins with the '1' one-bit pattern. The instruction specifies the
+instruction begins with the '10' two-bit pattern. The instruction specifies the
 total number of dynamic table inserts and duplications since the last Table
-State Synchronize, encoded as a 7-bit prefix integer.  The encoder uses this
+State Synchronize, encoded as a 6-bit prefix integer.  The encoder uses this
 value to determine which table entries are vulnerable to head-of-line blocking.
 
 A decoder MAY coalesce multiple synchronization updates into a single update.  A
@@ -503,8 +503,8 @@ SETTINGS_QPACK_BLOCKED_STREAMS lower than the number of active streams.
 ~~~~~~~~~~ drawing
   0   1   2   3   4   5   6   7
 +---+---+---+---+---+---+---+---+
-| 1 |     Insert Count (7+)     |
-+---+---------------------------+
+| 1 | 0 |   Insert Count (6+)   |
++---+---+-----------------------+
 ~~~~~~~~~~
 {:#fig-size-sync title="Table Size Synchronize"}
 
@@ -534,6 +534,28 @@ An encoder MUST treat receipt of a Header Acknowledgment as also acknowledging
 any dynamic table entries that the header block referenced.  That is, this
 instruction is also processed as a Table Size Synchronize instruction with a
 value matching the Largest Reference of the corresponding header block.
+
+
+### Stream Reset Acknowledgement
+
+A stream that is reset might have multiple outstanding header blocks.  A decoder
+that receives a stream reset before the end of a stream generates a Stream Reset
+Acknowledgment instruction on the decoder stream.  This signals to the encoder
+that any references to the dynamic table are no longer outstanding.
+
+An encoder cannot infer from this acknowledgement that any dynamic table entries
+referenced have been received.
+
+The instruction begins with the '11' two-bit pattern. The instruction includes
+the request stream's stream ID, encoded as a 6-bit prefix integer.
+
+~~~~~~~~~~ drawing
+  0   1   2   3   4   5   6   7
++---+---+---+---+---+---+---+---+
+| 1 | 0 |     Stream ID (6+)    |
++---+---+-----------------------+
+~~~~~~~~~~
+{:#fig-stream-reset title="Stream Reset Acknowledgement"}
 
 
 ## Request and Push Streams
