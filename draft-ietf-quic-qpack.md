@@ -265,6 +265,52 @@ might not actually become blocked on every stream which risks becoming blocked.
 If the decoder encounters more blocked streams than it promised to support, it
 SHOULD treat this as a stream error of type HTTP_QPACK_DECOMPRESSION_FAILED.
 
+### State Synchronization
+
+The decoder stream signals key events at the decoder that permit the encoder to
+track the decoder's state.  These events are:
+
+- Successful processing of a header block
+- Abandonment of a stream which might have remaining header blocks
+- Receipt of new dynamic table entries
+
+Regardless of whether a header block contained blocking references, the
+knowledge that it was processed successfully permits the encoder to avoid
+evicting entries while references remain outstanding; see {{blocked-eviction}}.
+When a stream is reset or abandoned, the indication that these header blocks
+will never be processed serves a similar function.
+
+For the encoder to identify which dynamic table entries can be safely used
+without a stream becoming blocked, the encoder tracks the Largest Known Received
+absolute index in the decoder's state.
+
+When blocking references are permitted, the encoder uses acknowledgement of
+header blocks for this purpose.  If a header block was potentially blocking, the
+successful processing of the block by the decoder implies that all necessary
+dynamic table state necessary to process the header block has also been
+received.  If the Largest Reference of an acknowledged header block was greater
+than the encoder's current Largest Known Received index, the block's Largest
+Reference becomes the new Largest Known Received.
+
+To acknowledge dynamic table entries which are not referenced by header blocks,
+for example because the encoder or the decoder have chosen not to risk blocked
+streams, the decoder sends a Table State Synchronize instruction (see
+{{table-state-synchronize}}).  This instruction increments the Largest Known
+Received value by the specified amount, acknowledging the insertion of a certain
+number of entries to the dynamic table.  The decoder will need to track the
+Largest Known Reference it has communicated to the encoder to generate these
+increments accurately.
+
+A decoder SHOULD emit a Table State Synchronize after receiving new dynamic
+table entries if the most recently inserted entry was not the Largest Reference
+of a blocked stream.  Decoders which support blocking MAY delay this instruction
+briefly to see if new header blocks arrive which reference the new entries, but
+this leads to reduced compression efficiency if the encoder waits for an entry
+to be acknowledged before using it.  This happens if the encoder wants to avoid
+the risk of blocking at the decoder, or the encoder has already reached the
+decoder's limit for blocked streams.
+
+
 # Conventions and Definitions
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
@@ -485,22 +531,12 @@ server's header blocks and table updates.
 
 ### Table State Synchronize
 
-After processing a set of instructions on the encoder stream, the decoder will
-emit a Table State Synchronize instruction on the decoder stream.  The
-instruction begins with the '1' one-bit pattern. The instruction specifies the
-total number of dynamic table inserts and duplications since the last Table
-State Synchronize or Header Acknowledgement that increased the largest
-acknolwedged dynamic table entry.  This is encoded as a 7-bit prefix integer.
-The encoder uses this value to determine which table entries are vulnerable to
-head-of-line blocking.
-
-A decoder MAY coalesce multiple synchronization updates into a single update.  A
-decoder MAY rely on Header Acknowledgement instructions to indirectly
-acknowledge changes to the dynamic table.  Relying on Header Acknowledgment
-instructions exclusively leads to poor compression efficiency if the encoder
-waits for an entry to be acknowledged before using it.  This happens if the
-encoder wants to avoid the risk of blocking at the decoder, or the encoder has
-already reached the decoder's limit for blocked streams.
+The Table State Synchronize instruction begins with the '1' one-bit pattern. The
+instruction specifies the total number of dynamic table inserts and duplications
+since the last Table State Synchronize or Header Acknowledgement that increased
+the Largest Known Received dynamic table entry.  This is encoded as a 7-bit
+prefix integer. The encoder uses this value to determine which table entries
+might cause a stream to become blocked.
 
 ~~~~~~~~~~ drawing
   0   1   2   3   4   5   6   7
@@ -531,15 +567,6 @@ blocks within a stream have been fully processed.
 +---+---------------------------+
 ~~~~~~~~~~
 {:#fig-header-ack title="Header Acknowledgement"}
-
-An encoder MUST treat receipt of a Header Acknowledgment as also acknowledging
-any dynamic table entries that the header block referenced.  That is, this
-instruction is also processed as a Table Size Synchronize instruction with a
-value matching the Largest Reference of the corresponding header block.
-
-A decoder MUST track increases to the largest acknowledged dynamic table entry
-caused by acknowledging a header block so that it can correctly generate the
-Table State Synchronize instruction.
 
 
 ## Request and Push Streams
