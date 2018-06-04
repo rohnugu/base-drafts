@@ -286,11 +286,11 @@ absolute index in the decoder's state.
 
 When blocking references are permitted, the encoder uses acknowledgement of
 header blocks for this purpose.  If a header block was potentially blocking, the
-successful processing of the block by the decoder implies that all necessary
-dynamic table state necessary to process the header block has also been
-received.  If the Largest Reference of an acknowledged header block was greater
-than the encoder's current Largest Known Received index, the block's Largest
-Reference becomes the new Largest Known Received.
+successful processing of the block by the decoder implies that all dynamic table
+state necessary to process the header block has also been received.  If the
+Largest Reference of an acknowledged header block was greater than the encoder's
+current Largest Known Received index, the block's Largest Reference becomes the
+new Largest Known Received.
 
 To acknowledge dynamic table entries which are not referenced by header blocks,
 for example because the encoder or the decoder have chosen not to risk blocked
