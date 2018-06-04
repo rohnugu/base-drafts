@@ -298,7 +298,7 @@ streams, the decoder sends a Table State Synchronize instruction (see
 {{table-state-synchronize}}).  This instruction increments the Largest Known
 Received value by the specified amount, acknowledging the insertion of a certain
 number of entries to the dynamic table.  The decoder will need to track the
-Largest Known Reference it has communicated to the encoder to generate these
+Largest Known Received it has communicated to the encoder to generate these
 increments accurately.
 
 A decoder SHOULD emit a Table State Synchronize after receiving new dynamic
