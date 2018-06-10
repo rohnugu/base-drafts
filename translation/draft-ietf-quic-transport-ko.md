@@ -649,7 +649,7 @@ PADDING 프레임을 포함할 수도 있다.\] 서버가 보낼 다음 STREAM �
 패킷에서는 패킷 넘버는 보통 증가한다.
 
 \["MUST NOT" 검증된 (verified) 소스 주소로부터 패킷을 받은 게 아니라면, 서버는
-3 개를 초과하는 핸드셰이크 패킷을 보내선 안된다.\] 소스 주소는 주소 검증 토큰
+3 개를 초과하는 핸드셰이크 패킷을 보내선 안된다.\] 소스 주소는 주소 입증 토큰
 (address validation token), 클라이언트로부터 최종 암호학적 메시지의 수신, 또는
 클라이언트로부터 유효한 PATH_RESPONSE 프레임을 받음으로써 검증될 수 있다.
 
@@ -999,116 +999,113 @@ SERVER_BUSY와 함께 CONNECTION_CLOSE 프레임을 담은 핸드셰이크 패�
 
 ### 버전 협상 패킷 보내기 {#send-vn}
 
-If the version selected by the client is not acceptable to the server, the
-server responds with a Version Negotiation packet (see {{packet-version}}).
-This includes a list of versions that the server will accept.
+클라이언트가 선택한 버전이 서버에서 수락될 수 없다면, 서버는 버전 협상 패킷으로
+응답한다 ({{packet-version}}을 보라). 이 패킷에는 서버가 수락할 수 있는 버전의
+리스트를 포함한다.
 
-This system allows a server to process packets with unsupported versions without
-retaining state.  Though either the Initial packet or the Version Negotiation
-packet that is sent in response could be lost, the client will send new packets
-until it successfully receives a response or it abandons the connection attempt.
-
-
-### Handling Version Negotiation Packets {#handle-vn}
-
-When the client receives a Version Negotiation packet, it first checks that the
-Destination and Source Connection ID fields match the Source and Destination
-Connection ID fields in a packet that the client sent.  If this check fails, the
-packet MUST be discarded.
-
-Once the Version Negotiation packet is determined to be valid, the client then
-selects an acceptable protocol version from the list provided by the server.
-The client then attempts to create a connection using that version.  Though the
-contents of the Initial packet the client sends might not change in
-response to version negotiation, a client MUST increase the packet number it
-uses on every packet it sends.  Packets MUST continue to use long headers and
-MUST include the new negotiated protocol version.
-
-The client MUST use the long header format and include its selected version on
-all packets until it has 1-RTT keys and it has received a packet from the server
-which is not a Version Negotiation packet.
-
-A client MUST NOT change the version it uses unless it is in response to a
-Version Negotiation packet from the server.  Once a client receives a packet
-from the server which is not a Version Negotiation packet, it MUST discard other
-Version Negotiation packets on the same connection.  Similarly, a client MUST
-ignore a Version Negotiation packet if it has already received and acted on a
-Version Negotiation packet.
-
-A client MUST ignore a Version Negotiation packet that lists the client's chosen
-version.
-
-Version negotiation packets have no cryptographic protection. The result of the
-negotiation MUST be revalidated as part of the cryptographic handshake (see
-{{version-validation}}).
+이 체계는 서버가 상태를 고정하지 않고 지원하지 않는 버전의 패킷을 처리할 수
+있게 한다. 비록 응답으로 초기화 패킷 이나 버전 협상 패킷 중 어느 것이
+보내지더라도 손실될 수 있지만, 클라이언트는 응답을 성공적으로 받을 때까지 새
+패킷을 보낼 것이며, 또는 연결 시도를 단념할 것이다.
 
 
-### Using Reserved Versions
+### 버전 협상 패킷의 핸들링 {#handle-vn}
 
-For a server to use a new version in the future, clients must correctly handle
-unsupported versions. To help ensure this, a server SHOULD include a reserved
-version (see {{versions}}) while generating a Version Negotiation packet.
+클라이언트가 버전 협상 패킷을 받았을 때, 클라이언트는 먼저 Desstination
+Connection ID 필드와 Source Connection ID 필드가 클라이언트가 보낸 패킷에서의
+Source Connection ID 필드와 Destination Connection ID 필드와 (각각) 매칭되는지
+체크한다. \["MUST" 체크 작업이 실패하면, 그 패킷은 반드시 폐기되어야만 한다.\]
 
-The design of version negotiation permits a server to avoid maintaining state
-for packets that it rejects in this fashion. The validation of version
-negotiation (see {{version-validation}}) only validates the result of version
-negotiation, which is the same no matter which reserved version was sent.
-A server MAY therefore send different reserved version numbers in the Version
-Negotiation Packet and in its transport parameters.
+버전 협상 패킷이 유효한 것으로 판정되면, 클라이언트는 서버가 제공한 리스트에서
+수락될 프로토콜 버전을 선택한다. 그리고나서 클라이언트는 그 버전을 사용한
+연결을 만들고자 시도한다. 비록 클라이언트가 보낸 초기화 패킷의 내용은 버전
+협상의 응답 과정에서 변하지 않을 것이지만, \["MUST" 클라이언트는 보내는 모든
+패킷의 패킷 번호를 증가시켜야 한다.\] \["MUST" 패킷은 계속 긴 헤더를 사용해야만
+하며,\] 또한 \["MUST" 패킷은 새로이 협상된 프로토콜 버전을 포함해야만 한다.\]
 
-A client MAY send a packet using a reserved version number.  This can be used to
-solicit a list of supported versions from a server.
+\["MUST" 클라이언트는 긴 헤더 포맷을 반드시 사용하여야만 하고, 또한 \["MUST"
+'1-RTT 키가 있고 서버로부터 버전 협상 패킷이 아닌 패킷을 받을 때'까지 모든
+패킷에 선택한 버전을 포함시켜야만 한다.\]
+
+\["MUST NOT" 클라이언트는 서버로부터 온 버전 협상 패킷에 응답하는 중이 아니라면
+버전을 바꾸어서는 안 된다.\] 클라이언트가 서버로부터 버전 협상 패킷이 아닌
+패킷을 받은 뒤에는, \["MUST" 같은 연결의 다른 버전 협상 패킷들을 반드시
+폐기해야 한다.\] 비슷하게, 클라이언트는 버전 협상 패킷을 이미 받았고 그에
+대응하였다면, \["MUST" 그 클라이언트는 버전 협상 패킷을 무시하여야만 한다.\]
+
+\["MUST" 클라이언트는 클라이언트가 선택한 버전을 나열한 버전 협상 패킷을
+무시하여야만 한다.\]
+
+버전 협상 패킷은 아무런 암호학적 보호를 하지 않는다. \["MUST" 협상 결과는
+암호학적 핸드셰이크의 일부로 재확인되어야만 한다 ({{version-validation}}을 보라).\]
 
 
-## Cryptographic and Transport Handshake {#handshake}
+### 점유된 버전 사용하기
 
-QUIC relies on a combined cryptographic and transport handshake to minimize
-connection establishment latency.  QUIC allocates stream 0 for the cryptographic
-handshake.  Version 0x00000001 of QUIC uses TLS 1.3 as described in
-{{QUIC-TLS}}; a different QUIC version number could indicate that a different
-cryptographic handshake protocol is in use.
+추후 새 버전을 사용하는 서버가 있을 수 있으므로, 클라이언트는 지원하지 않는
+버전을 올바로 핸들링해야만 한다. 이를 확실히 하도록 돕기 위해, \["SHOULD"
+버전 협상 패킷을 생성할 때 이러한 서버는 점유된 버전 ({{versions}})을 포함해야
+한다.\]
 
-QUIC provides this stream with reliable, ordered delivery of data.  In return,
-the cryptographic handshake provides QUIC with:
+이러한 버전 협상 설계는 서버가 '이러한 이유로 거부한 패킷에 대한 상태'를
+유지하는 것을 피하도록 허용한다. 버전 협상의 입증 ({{version-validation}}을
+보라)은 버전 협상 결과만을 입증하며, 이는 어떤 점유된 버전이 보내지든 상관 없이
+동일하다. \["MAY" 따라서 서버는 버전 협상 패킷과 그 전송 파라미터에 각각 다른
+점유된 버전 번호를 사용할 것이다.\]
+(역주: 마지막 문장에서 '각각 다른'이 맞는지에 대한 검증이 필요하다.)
 
-* authenticated key exchange, where
+\["MAY" 클라이언트는 예약된 버전 번호를 사용한 패킷을 보낼 수도 있다.\] 이러한
+행동은 서버로부터 지원되는 버전의 리스트를 요청하기 위해 사용될 수 있다.
 
-   * a server is always authenticated,
 
-   * a client is optionally authenticated,
+## 암호학적 핸드셰이크와 전송 핸드셰이크 {#handshake}
 
-   * every connection produces distinct and unrelated keys,
+QUIC은 연결 설립 지연을 최소화하기 위해 암호학적 핸드셰이크와 전송 핸드세이크의
+결합에 의존한다. QUIC은 암호학적 핸드셰이크를 위해 스트림 0을 할당한다.
+{{QUIC-TLS}}에 설명되었듯, QUIC 버전 0x00000001은 TLS 1.3을 사용한다; 다른 QUIC
+버전 번호는 다른 암호학적 핸드셰이크 프로토콜이 사용중임을 나타낼 수도 있다.
 
-   * keying material is usable for packet protection for both 0-RTT and 1-RTT
-     packets, and
+QUIC은 이 스트림에 신뢰적이고, 정렬된 데이터 전송을 제공한다. 거꾸로, 암호학적
+핸드셰이크는 QUIC에 다음을 제공한다:
 
-   * 1-RTT keys have forward secrecy
+* 인증된 키 교환을 통해,
 
-* authenticated values for the transport parameters of the peer (see
-  {{transport-parameters}})
+   * 서버는 언제나 인증되고,
 
-* authenticated confirmation of version negotiation (see {{version-validation}})
+   * 클라이언트는 선택적으로 인증되며,
 
-* authenticated negotiation of an application protocol (TLS uses ALPN
-  {{?RFC7301}} for this purpose)
+   * 모든 연결은 서로 다르고 무관한 (distinct and unrelated)키를 생성하며,
 
-* for the server, the ability to carry data that provides assurance that the
-  client can receive packets that are addressed with the transport address that
-  is claimed by the client (see {{address-validation}})
+   * 키 재료(keying matrial)는 0-RTT와 1-RTT 패킷을 위한 패킷 보호에 사용할 수
+     있고,
 
-The initial cryptographic handshake message MUST be sent in a single packet.
-Any second attempt that is triggered by address validation MUST also be sent
-within a single packet.  This avoids having to reassemble a message from
-multiple packets.  Reassembling messages requires that a server maintain state
-prior to establishing a connection, exposing the server to a denial of service
-risk.
+   * 1-RTT 키는 순방향 비밀성 (forward secrecy)을 가진다.
 
-The first client packet of the cryptographic handshake protocol MUST fit within
-a 1232 octet QUIC packet payload.  This includes overheads that reduce the space
-available to the cryptographic handshake protocol.
+* 상대방의 전송 파라미터의 인증된 값 (authenticated values)
+  ({{transport-parameters}}를 보라)
 
-Details of how TLS is integrated with QUIC is provided in more detail in
-{{QUIC-TLS}}.
+* 버전 협상의 인증된 확인 ({{version-validation}}을 보라)
+
+* 응용 프로토콜의 인증된 협상 (TLS는 이 목적을 달성하고자 ALPN {{?RFC7301}}을
+  사용함)
+
+* 서버에게 클라이언트가 요구한 전송 주소로 패킷 수령을 보장하며 데이터를 전송할
+  능력 ({{address-validation}}을 보라)
+
+(역주: keying material: NIST의 정의에 따르면 the data (e.g., keys and IVs)
+necessary to establish and maintain cryptographic keying relationships)
+
+\["MUST" 초기 암호학적 핸드셰이크 메시지는 단일 패킷으로 보내저야만 한다.\]
+\["MUST" 주소 입증에 의해 트리거된 두 번째 시도 또한 반드시 단일 패킷으로
+보내져야만 한다.\] 이렇게 함으로써 여러 패킷으로 나눠진 메시지를 재조립하는 걸
+피할 수 있다. 메시지 재조립은 서버가 연결 설립 전에 상태를 유지하도록 요구하여,
+서버를 서비스 거부 (denial of service) 위협에 노출시킨다.
+
+\["MUST" 암호학적 핸드셰이크 프로토콜의 첫 클라이언트 패킷은 1232 옥텟 길이의
+QUIC 패킷 페이로드 안에 들어가야만 한다.\] 이 조건에서 암호학적 핸드셰이크
+프로토콜이 사용가능한 공간을 줄이는 오버헤드도 포함한다.
+
+TLS가 QUIC과 어떻게 결합되는지에 대한 상세는 {{QUIC-TLS}}에서 자세히 제공된다.
 
 
 ## Transport Parameters
