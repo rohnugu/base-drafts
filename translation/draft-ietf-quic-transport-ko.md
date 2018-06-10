@@ -93,17 +93,25 @@ informative:
 --- abstract
 
 이 문서는 QUIC 전송 프로토콜의 핵심을 정의한다. 이 문서는 연결 설립, 패킷 포맷,
-다중화 및 신뢰성을 설명한다. 동반된 문서는 암호학적 핸드셰이크와 손실 탐지를 설명한다.
+다중화 및 신뢰성을 설명한다. 동반된 문서는 암호학적 핸드셰이크와 손실 탐지를
+설명한다.
 
 
 --- note_Note_to_Readers
 
-이 드래프트에 관한 토론은 QUIC 워킹 그룹 메일링 리스트 (quic@ietf.org)에서 진행되며
-\<https://mailarchive.ietf.org/arch/search/?email_list=quic\>에 보관되어 있다.
+이 드래프트에 관한 토론은 QUIC 워킹 그룹 메일링 리스트 (quic@ietf.org)에서
+진행되며 \<https://mailarchive.ietf.org/arch/search/?email_list=quic\>에
+보관되어 있다.
 
 워킹 그룹에 관한 정보는 \<https://github.com/quicwg\>에서 찾을 수 있다.; 이
 드래프트의 소스 코드 및 이슈 리스트는
 \<https://github.com/quicwg/base-drafts/labels/-transport\>에서 찾을 수 있다.
+
+본 한국어 문서는 노희준 (hjroh@korea.ac.kr)이 네트워크 프로토콜 연구를
+위해 초벌 번역한 것이다. 본 Internet-Draft는 Simplified BSD License를 따르며,
+번역자는 본 번역물에 대해 해당 라이센스의 허용 범위 내에서 2차 저작물로서의
+모든 권리를 가진다. 단, 번역자는 번역 내용을 참고함으로써 발생할 수 있는 어떠한
+문제에 대해서도 책임을 지지 않는다.
 
 --- middle
 
@@ -128,28 +136,28 @@ QUIC은 UDP 위에서 동작하는 다중화된 보안 전송 프로토콜의 �
 QUIC은 TCP, SCTP, 및 다른 전송 프로토콜을 경험하며 배운 기법을 구현한다. QUIC은
 배포할 수 있도록 기존 클라이언트 운영 체제 및 미들박스에 수정을 요구하지 않고자
 UDP를 토대(substrate)로 사용한다. QUIC은 헤더 전체를 인증하며, 시그널링을 포함,
-교환하는 데이터 대부분을 암호화한다. 이는 프로토콜이 미들박스의 업그레이드(를 요구하는)
-의존성 없이 발전할 수 있게 한다. 이 문서는 핵심 QUIC 프로토콜을 설명하며, 컨셉 디자인
-(conceptual design), 선로 포맷 (wire format), 연결 설립을 위한 QUIC 프로토콜의
-메커니즘, 스트림 다중화, 스트림과 연결 수준의 흐름 제어, 연결 이전, 데이터 신뢰성을
-포함한다.
+교환하는 데이터 대부분을 암호화한다. 이는 프로토콜이 미들박스의 업그레이드(를
+요구하는) 의존성 없이 발전할 수 있게 한다. 이 문서는 핵심 QUIC 프로토콜을
+설명하며, 컨셉 디자인 (conceptual design), 선로 포맷 (wire format), 연결 설립을
+위한 QUIC 프로토콜의 메커니즘, 스트림 다중화, 스트림과 연결 수준의 흐름 제어,
+연결 이전, 데이터 신뢰성을 포함한다.
 
-동반된 문서들은 QUIC의 손실 탐지와 혼잡 제어{{QUIC-RECOVERY}}를 설명하며, 키 협상을
-위해 TLS 1.3을 사용하는 것{{QUIC-TLS}}을 설명한다.
+동반된 문서들은 QUIC의 손실 탐지와 혼잡 제어{{QUIC-RECOVERY}}를 설명하며, 키
+협상을 위해 TLS 1.3을 사용하는 것{{QUIC-TLS}}을 설명한다.
 
-QUIC version 1은 {{QUIC-INVARIANTS}}에 명기된 프로토콜 불변성 (protocol invariants)
-를 따른다 (conform).
+QUIC version 1은 {{QUIC-INVARIANTS}}에 명기된 프로토콜 불변성 (protocol
+invariants) 를 따른다 (conform).
 
 
 # 관례와 정의
 
-이 문서에서 다음 주요 단어들 "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
-"SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY" 및 "OPTIONAL"은
-여기에 있듯이 모두 대문자로 나타난 때에, 그리고 그 때에만 (when, and only when)
-BCP 14 {{!RFC2119}} {{!RFC8174}}에서 설명하듯이 해석되어야 한다.
+이 문서에서 다음 주요 단어들 "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY" 및
+"OPTIONAL"은 여기에 있듯이 모두 대문자로 나타난 때에, 그리고 그 때에만 (when,
+and only when) BCP 14 {{!RFC2119}} {{!RFC8174}}에서 설명하듯이 해석되어야 한다.
 
-(역주) 한국어엔 이를 적절히 번역할 방법이 없으므로, 해당 문장 또는 절을 \[\]로 묶어
-\["MUST" 문장\]과 같이 표기하도록 한다.
+(역주) 한국어엔 이를 적절히 번역할 방법이 없으므로, 해당 문장 또는 절을 \[\]로
+묶어 \["MUST" 문장\]과 같이 표기하도록 한다.
 
 
 이 문서에서 사용되는 용어의 정의:
@@ -259,13 +267,13 @@ IETF 드래프트를 구분하기 위해 사용된 버전 번호는 0xff000000�
 때에는 최하위 비트를 비트 0으로 둔다. 16진수 표기법이 필드 값을 설명하고자
 사용된다.
 
-(역주) 모든 필드는 가독성을 위해 번역하지 않는다. 필요에 따라 구문의 가독성을 높이기
-위해 ''를 사용한다.
+(역주) 모든 필드는 가독성을 위해 번역하지 않는다. 필요에 따라 구문의 가독성을
+높이기 위해 ''를 사용한다.
 
-모든 QUIC 패킷은 긴 헤더와 짧은 헤더 중 하나를 가지며, 이는 Header Form 비트를 보고
-알 수 있다. '버전 협상과 1-RTT 키의 설립' 전의 연결 초기에 긴 헤더가 사용될 것이다.
-짧은 헤더는 최소한의 버전 별 헤더를 갖는데, 이는 버전 협상과 1-RTT 키 설립 후에
-사용된다.
+모든 QUIC 패킷은 긴 헤더와 짧은 헤더 중 하나를 가지며, 이는 Header Form 비트를
+보고 알 수 있다. '버전 협상과 1-RTT 키의 설립' 전의 연결 초기에 긴 헤더가
+사용될 것이다. 짧은 헤더는 최소한의 버전 별 헤더를 갖는데, 이는 버전 협상과
+1-RTT 키 설립 후에 사용된다.
 
 ## 긴 헤더 {#long-header}
 
@@ -500,11 +508,11 @@ Unused 필드의 값은 서버에 의해 랜덤하게 선택된다.
 \["MUST" 버전 협상 패킷의 Version 필드는 0x00000000으로 설정되어야 한다.\]
 
 \["MUST" 서버는 받은 패킷의 Source Connection ID 필드의 값을 Destination
-Connection ID 필드에 포함시켜야 한다.] \["MUST" Source Connection ID 값은 받은 패킷
-의 Destination Connection ID로부터 복사되어야 하며], 이는 초기에 클라이언트에
-의해 랜덤하게 선택된 값이다. 두 연결 ID를 똑같이 되보내면 클라이언트는 '서버가
-패킷을 잘 받았으며 버전 협상 패킷이 경로 바깥의 공격자에 의해 생성되지
-않았음'을 어느 정도 확신할 수 있다.
+Connection ID 필드에 포함시켜야 한다.] \["MUST" Source Connection ID 값은 받은
+패킷의 Destination Connection ID로부터 복사되어야 하며], 이는 초기에
+클라이언트에 의해 랜덤하게 선택된 값이다. 두 연결 ID를 똑같이 되보내면
+클라이언트는 '서버가 패킷을 잘 받았으며 버전 협상 패킷이 경로 바깥의 공격자에
+의해 생성되지 않았음'을 어느 정도 확신할 수 있다.
 
 버전 협상 패킷의 나머지 부분은 32-비트로 표현된, 서버가 지원하는 버전의
 리스트이다.
@@ -571,8 +579,8 @@ STREAM 프레임 (또는 프레임들)을 나른다. 이 패킷의 스트림은 
 
 클라이언트는 '초기 암호화된 핸드셰이크 메시지'를 담은 모든 패킷에 대해 초기화
 패킷 타입을 사용한다. 이 상황은 '초기 암호화된 메시지'를 포함한 새 패킷을
-만드는 상황을 포함한다. 또한 버전 협상 패킷 ({{packet-version}}) 또는 재시도 패킷
-({{packet-retry}})를 받은 뒤에 보내는 패킷들도 포함한다.
+만드는 상황을 포함한다. 또한 버전 협상 패킷 ({{packet-version}}) 또는 재시도
+패킷 ({{packet-retry}})를 받은 뒤에 보내는 패킷들도 포함한다.
 
 
 ### 재시도 패킷 {#packet-retry}
@@ -614,7 +622,7 @@ ID를 사용해야 한다.\]
 유지할 수 있지만\], \["MUST" 다른 전송 상태는 반드시 폐기하여야 한다.\]
 
 재시도 패킷의 페이로드는 적어도 두 개의 프레임을 담고 있다. \["MUST" 서버의
-암호학적 무상태 재시도 (serverless retry) 내용물을 담은, 오프셋 0의 스트림
+암호학적 무상태 재시도 (stateless retry) 내용물을 담은, 오프셋 0의 스트림
 0에서의 STREAM 프레임을 포함하여야 한다.\] \["MUST" 또한 클라이언트의 초기화
 패킷의 확인응답을 위한 ACK 프레임을 포함하여야 한다.\] \["MAY" 추가적으로
 PADDING 프레임을 포함할 수도 있다.\] 서버가 보낼 다음 STREAM 프레임 또한
@@ -835,11 +843,11 @@ QUIC의 긴/짧은 패킷 헤더에서, 패킷 번호를 나타내기 위해 필
 규칙이 있다.
 
 
-# Frames and Frame Types {#frames}
+# 프레임 및 프레임 타입 {#frames}
 
-The payload of all packets, after removing packet protection, consists of a
-sequence of frames, as shown in {{packet-frames}}.  Version Negotiation and
-Stateless Reset do not contain frames.
+패킷 보호를 제거한 뒤에, 모든 패킷의 페이로드는 {{packet-frames}}에 나타나듯
+일련의 프레임으로 구성된다. 버전 협상 패킷 및 무상태 리셋 패킷은 프레임을
+포함하지 않는다.
 
 ~~~
  0                   1                   2                   3
@@ -856,12 +864,12 @@ Stateless Reset do not contain frames.
 ~~~
 {: #packet-frames title="Contents of Protected Payload"}
 
-Protected payloads MUST contain at least one frame, and MAY contain multiple
-frames and multiple frame types.
+\["MUST" 보호된 페이로드는 적어도 하나의 프레임을 포함해야만 한다.] \["MAY"
+또한 보호된 페이로드는 여러 프레임 및 여러 프레임 타입을 포함할 수도 있다.\]
 
-Frames MUST fit within a single QUIC packet and MUST NOT span a QUIC packet
-boundary. Each frame begins with a Frame Type byte, indicating its type,
-followed by additional type-dependent fields:
+\["MUST" 프레임은 단일 QUIC 패킷 안에 들어갈 수 있어야만 한다.\] \["MUST NOT"
+프레임은 QUIC 패킷 경계를 걸쳐서는 (span) 안된다.\] 각 프레임은 타입을 나타내기
+위해 Frame Type 바이트로 시작한 뒤 추가적인 Type-Dependent 필드가 이어진다:
 
 ~~~
  0                   1                   2                   3
@@ -872,10 +880,10 @@ followed by additional type-dependent fields:
 ~~~
 {: #frame-layout title="Generic Frame Layout"}
 
-Frame types are listed in {{frame-types}}. Note that the Frame Type byte in
-STREAM frames is used to carry other frame-specific flags.  For all
-other frames, the Frame Type byte simply identifies the frame.  These frames are
-explained in more detail as they are referenced later in the document.
+프레임 타입은 {{frame-types}}에 나열되어 있다. STREAM 프레임에서 Frame Type
+바이트는 다른 프레임-특화된 플래그를 담기 위해 사용됨에 주의하라. 다른 모든
+프레임들에서는, Frame Type 바이트는 단순히 프레임을 구분한다. 이 프레임들에
+대해서는 본 문서 뒷부분에서 좀 더 자세히 설명한다.
 
 | Type Value  | Frame Type Name   | Definition                  |
 |:------------|:------------------|:----------------------------|
@@ -898,104 +906,98 @@ explained in more detail as they are referenced later in the document.
 | 0x10 - 0x17 | STREAM            | {{frame-stream}}            |
 {: #frame-types title="Frame Types"}
 
-# Life of a Connection
+# 연결의 생애
 
-A QUIC connection is a single conversation between two QUIC endpoints.  QUIC's
-connection establishment intertwines version negotiation with the cryptographic
-and transport handshakes to reduce connection establishment latency, as
-described in {{handshake}}.  Once established, a connection may migrate to a
-different IP or port at either endpoint, due to NAT rebinding or mobility, as
-described in {{migration}}.  Finally a connection may be terminated by either
-endpoint, as described in {{termination}}.
+QUIC 연결은 두 QUIC 엔드포인트 간의 단일 대화이다. QUIC의 연결 설립은
+{{handshake}}에 설명되어 있듯이 버전 협상에 암호학적 핸드셰이크와 전송
+핸드셰이크를 섞어 연결 설립 지연을 줄인다. 연결이 설립된 뒤에, 연결은
+{{migration}}에 설명되어 있듯이 NAT 재바인딩이나 이동성으로 인해 각
+엔드포인트에서 다른 IP나 포트로 이전할 수 있다. 최종적으로 연결은
+{{termination}}에 설명되어 있듯이 각 엔드포인트에서 종료될 수 있다.
 
-## Matching Packets to Connections {#packet-handling}
+## 패킷을 연결에 매칭하기 {#packet-handling}
 
-Incoming packets are classified on receipt.  Packets can either be associated
-with an existing connection, or - for servers - potentially create a new
-connection.
+도착 패킷은 수신 과정 (receipt)에서 분류된다. 패킷은 기존 연결에 결부될
+(associated) 수 있으며, 또는 패킷은 - 서버에서 - 잠재적으로 새 연결을 생성할 수
+있다.
 
-Hosts try to associate a packet with an existing connection. If the packet has
-a Destination Connection ID corresponding to an existing connection, QUIC
-processes that packet accordingly. Note that a NEW_CONNECTION_ID frame
-({{frame-new-connection-id}}) would associate more than one connection ID with a
-connection.
+호스트는 기존 연결에 패킷을 결부시키려고 한다. 패킷이 패킷이 기존 연결에
+대응하는 Destination Connection ID를 가진다면, QUIC은 해당 패킷을 적절히
+처리한다. NEW_CONNECTION_ID 프레임 ({{frame-new-connection-id}})는 한 연결에
+한 개 이상의 연결 ID를 결부할 수 있음을 주의하라.
 
-If the Destination Connection ID is zero length and the packet matches the
-address/port tuple of a connection where the host did not require connection
-IDs, QUIC processes the packet as part of that connection. Endpoints MUST drop
-packets with zero-length Destination Connection ID fields if they do not
-correspond to a single connection.
+패킷의 Destination Connection ID의 길이가 0이고, 해당 호스트가 가지고 있는
+'연결 ID를 필요로 하지 않는 연결'의 주소/포트 튜플과 그 패킷이 매칭된다면,
+QUIC은 그 패킷을 해당 연결의 일부로 처리한다. \["MUST" 엔드포인트는,
+Destination Connection ID 필드의 길이가 0인 패킷이 어느 단일 연결에도 대응하지
+않을 때, 그 패킷을 폐기해야만 한다.\]
 
 
-### Client Packet Handling {#client-pkt-handling}
+### 클라이언트의 패킷 핸들링 {#client-pkt-handling}
 
-Valid packets sent to clients always include a Destination Connection ID that
-matches the value the client selects.  Clients that choose to receive
-zero-length connection IDs can use the address/port tuple to identify a
-connection.  Packets that don't match an existing connection MAY be discarded.
+클라이언트로 보내진 유효한 패킷은 언제나 '클라이언트가 선택한 값과 매칭되는
+Destination Connection ID'를 포함한다. 길이가 0인 연결 ID를 받고자 하는
+클라이언트는 연결을 특정하기 위해 주소/포트 튜플을 사용할 수 있다. \["MAY" 기존
+연결과 매칭되지 않는 패킷은 폐기될 수 있다.\]
 
-Due to packet reordering or loss, clients might receive packets for a connection
-that are encrypted with a key it has not yet computed. Clients MAY drop these
-packets, or MAY buffer them in anticipation of later packets that allow it to
-compute the key.
+패킷 재정렬 또는 패킷 손실로 인해, 클라이언트는 아직 계산되지 않은 키로
+암호화된 연결에 대한 패킷을 받을 수 있다. \["MAY" 클라이언트는 이러한 패킷을
+폐기할 수 있거나\], 또는 \["MAY" 클라이언트는 키를 계산할 수 있게 하는 후속
+패킷을 고대하며 이러한 패킷을 버퍼링할 수 있다.\]
 
-If a client receives a packet that has an unsupported version, it MUST discard
-that packet.
+클라이언트가 지원되지 않는 버전의 패킷을 받으면, \["MUST" 그 패킷은 반드시
+폐기되어야 한다.\]
 
 
-### Server Packet Handling {#server-pkt-handling}
+### 서버의 패킷 핸들링 {#server-pkt-handling}
 
-If a server receives a packet that has an unsupported version and
-sufficient length to be an Initial packet for some version supported
-by the server, it SHOULD send a Version Negotiation packet as
-described in {{send-vn}}. Servers MAY rate control these packets to
-avoid storms of Version Negotiation packets.
+서버가 지원되지 않는 버전의 패킷을 받았는데, 그 패킷이 서버에서 지원되는 어떤
+버전의 초기화 패킷이 될만큼 충분한 길이이면, \["SHOULD" 서버는 {{send-vn}}에
+설명되었듯이 버전 협상 패킷을 보내야 한다.\] \["MAY" 서버는 버전 협상 패킷의
+폭풍(storm)을 피하기 위해 패킷의 전송률 (rate)을 제어할 것이다.\]
 
-The first packet for an unsupported version can use different semantics and
-encodings for any version-specific field.  In particular, different packet
-protection keys might be used for different versions.  Servers that do not
-support a particular version are unlikely to be able to decrypt the content of
-the packet.  Servers SHOULD NOT attempt to decode or decrypt a packet from an
-unknown version, but instead send a Version Negotiation packet, provided that
-the packet is sufficiently long.
+지원되지 않는 버전의 첫 패킷은 어떤 버전 특화된 필드에 대해 다른 시맨틱과
+인코딩을 사용할 수 있다. 특히, 다른 패킷 보호 키가 다른 버전에서 사용될 것이다.
+특정 버전을 지원하지 않는 서버는 패킷의 내용을 해독하는 것이 거의 어려울
+것이다. \["SHOULD NOT" 서버는 모르는 버전의 패킷을 디코딩 또는 복호화하려고
+시도해서는 안 되지만,\] 대신, 받은 패킷이 충분히 긴 경우에는 버전 협상 패킷은
+보내도 된다.
 
-Servers MUST drop other packets that contain unsupported versions.
+\["MUST" 서버는 지원되지 않는 버전을 포함한 다른 패킷들을 폐기해야만 한다.\]
 
-Packets with a supported version, or no version field, are matched to
-a connection as described in {{packet-handling}}. If not matched, the
-server continues below.
+지원되는 버전의 패킷 또는 Version 필드가 없는 패킷은 {{packet-handling}}에
+설명된 대로 어떤 연결에 매칭되어진다. 매칭되지 않는다면, 서버는 아래와 같이
+한다.
 
-If the packet is an Initial packet fully conforming with the
-specification, the server proceeds with the handshake ({{handshake}}).
-This commits the server to the version that the client selected.
+패킷이 명세를 완전히 따르는 초기화 패킷이라면, 서버는 핸드셰이크
+({{handshake}})를 진행한다. 이는 서버가 클라이언트가 선택한 버전을 택하게
+(commit) 한다.
 
-If a server isn't currently accepting any new connections, it SHOULD send a
-Handshake packet containing a CONNECTION_CLOSE frame with error code
-SERVER_BUSY.
+서버가 현재 어떤 새로운 연결도 수락하지 않는다면, \["SHOULD" 서버는 에러 코드
+SERVER_BUSY와 함께 CONNECTION_CLOSE 프레임을 담은 핸드셰이크 패킷을 보내야
+한다.\]
 
-If the packet is a 0-RTT packet, the server MAY buffer a limited
-number of these packets in anticipation of a late-arriving Initial
-Packet. Clients are forbidden from sending Handshake packets prior to
-receiving a server response, so servers SHOULD ignore any such packets.
+패킷이 0-RTT 패킷이면, \["MAY" 서버는 늦게 도착하는 초기화 패킷을 기대하며
+유한 개의 패킷을 버퍼링할 것이다.\] 클라이언트는 서버 응답을 받기 전에
+핸드셰이크 패킷을 보내는 것이 금지된다. 따라서 \["SHOULD" 서버는 그런 패킷을
+무시해야 한다.\]
 
-Servers MUST drop incoming packets under all other circumstances. They
-SHOULD send a Stateless Reset ({{stateless-reset}}) if a connection ID
-is present in the header.
+\["MUST" 서버는 이외의 모든 상황에 처한 도착 패킷을 반드시 폐기하여야만
+한다.\] \["SHOULD" 도착 패킷의 헤더에 연결 ID가 있을 경우, 서버는 무상태 리셋
+({{stateless-reset}})을 보내야 한다.\]
 
-## Version Negotiation
+## 버전 협상
 
-Version negotiation ensures that client and server agree to a QUIC version
-that is mutually supported. A server sends a Version Negotiation packet in
-response to each packet that might initiate a new connection, see
-{{packet-handling}} for details.
+버전 협상은 클라이언트와 서버가 상호간에 지원하는 QUIC 버전의 사용을 동의하도록
+한다. 서버는 새로운 연결을 시작하려는 각 패킷의 응답으로 버전 협상 패킷을
+보내는데, 상세한 내용은 {{packet-handling}}을 보아라.
 
-The size of the first packet sent by a client will determine whether a server
-sends a Version Negotiation packet. Clients that support multiple QUIC
-versions SHOULD pad their Initial packets to reflect the largest minimum
-Initial packet size of all their versions. This ensures that the server
-responds if there are any mutually supported versions.
+클라이언트가 보낸 첫 패킷의 크기는 서버가 버전 협상 패킷을 보낼지 말지 여부를
+결정할 것이다. 여러 QUIC 버전을 지원하는 클라이언트는 각 버전의 '최소 초기화
+패킷 사이즈' 중 최대값을 반영해 패딩을 넣어야 한다. 이는 상호간에 지원하는
+버전이 하나라도 있으면 서버가 응답하도록 한다.
 
-### Sending Version Negotiation Packets {#send-vn}
+### 버전 협상 패킷 보내기 {#send-vn}
 
 If the version selected by the client is not acceptable to the server, the
 server responds with a Version Negotiation packet (see {{packet-version}}).
