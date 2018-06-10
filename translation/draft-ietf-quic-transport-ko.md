@@ -101,8 +101,8 @@ informative:
 이 드래프트에 관한 토론은 QUIC 워킹 그룹 메일링 리스트 (quic@ietf.org)에서 진행되며
 \<https://mailarchive.ietf.org/arch/search/?email_list=quic\>에 보관되어 있다.
 
-워킹 그룹에 관한 정보는 \<https://github.com/quicwg\>에서 찾을 수 있다.; 이 
-드래프트의 소스 코드 및 이슈 리스트는 
+워킹 그룹에 관한 정보는 \<https://github.com/quicwg\>에서 찾을 수 있다.; 이
+드래프트의 소스 코드 및 이슈 리스트는
 \<https://github.com/quicwg/base-drafts/labels/-transport\>에서 찾을 수 있다.
 
 --- middle
@@ -127,7 +127,7 @@ QUIC은 UDP 위에서 동작하는 다중화된 보안 전송 프로토콜의 �
 
 QUIC은 TCP, SCTP, 및 다른 전송 프로토콜을 경험하며 배운 기법을 구현한다. QUIC은
 배포할 수 있도록 기존 클라이언트 운영 체제 및 미들박스에 수정을 요구하지 않고자
-UDP를 토대(substrate)로 사용한다. QUIC은 헤더 전체를 인증하며, 시그널링을 포함, 
+UDP를 토대(substrate)로 사용한다. QUIC은 헤더 전체를 인증하며, 시그널링을 포함,
 교환하는 데이터 대부분을 암호화한다. 이는 프로토콜이 미들박스의 업그레이드(를 요구하는)
 의존성 없이 발전할 수 있게 한다. 이 문서는 핵심 QUIC 프로토콜을 설명하며, 컨셉 디자인
 (conceptual design), 선로 포맷 (wire format), 연결 설립을 위한 QUIC 프로토콜의
@@ -333,7 +333,7 @@ Destination Connection ID:
 
 Source Connection ID:
 
-: Source Connection ID 필드는 Destination Connection ID 필드 바로 뒤에 
+: Source Connection ID 필드는 Destination Connection ID 필드 바로 뒤에
   이어지며, 그 길이는  0 옥텟이거나 4에서 18 옥텟 사이이다.
   {{connection-id}}에서 이 필드의 사용에 관해 더욱 자세히 설명한다.
 
@@ -379,7 +379,7 @@ Payload 필드의 크기는 패킷 번호 보호가 제거된 뒤에야 알게 �
 {{packet-coalesce}}를 보라.
 
 
-## 짧은 헤더
+## 짧은 헤더 {#short-header}
 
 ~~~~~
  0                   1                   2                   3
@@ -455,7 +455,7 @@ Protected Payload:
 : 짧은 헤더 패킷은 1-RTT (키로) 보호된 페이로드를 포함한다.
 
 짧은 헤더 패킷의 Header Form과 Connection ID 필드는 버전 독립적이다. 나머지
-필드는 선택된 QUIC 버전에 특화적이다. 다른 버전의 QUIC에서 패킷을 어떻게 
+필드는 선택된 QUIC 버전에 특화적이다. 다른 버전의 QUIC에서 패킷을 어떻게
 해석할지에 대한 상세는 {{QUIC-INVARIANTS}}를 보라.
 
 
@@ -4535,7 +4535,7 @@ Issue and pull request numbers are listed with a leading octothorp.
 
 
 # Acknowledgments
-{:numbered="false"}
+#{:numbered="false"}
 
 Special thanks are due to the following for helping shape pre-IETF QUIC and its
 deployment: Chris Bentzel, Misha Efimov, Roberto Peon, Alistair Riddoch,
@@ -4547,7 +4547,7 @@ thanks to all.
 
 
 # Contributors
-{:numbered="false"}
+#{:numbered="false"}
 
 The original authors of this specification were Ryan Hamilton, Jana Iyengar, Ian
 Swett, and Alyssa Wilk.
