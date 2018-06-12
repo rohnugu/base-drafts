@@ -1076,7 +1076,7 @@ QUIC은 이 스트림에 신뢰적이고, 정렬된 데이터 전송을 제공�
 
    * 모든 연결은 서로 다르고 무관한 (distinct and unrelated)키를 생성하며,
 
-   * 키 재료(keying matrial)는 0-RTT와 1-RTT 패킷을 위한 패킷 보호에 사용할 수
+   * 키 재료(keying material)는 0-RTT와 1-RTT 패킷을 위한 패킷 보호에 사용할 수
      있고,
 
    * 1-RTT 키는 순방향 비밀성 (forward secrecy)을 가진다.
@@ -1108,17 +1108,16 @@ QUIC 패킷 페이로드 안에 들어가야만 한다.\] 이 조건에서 암�
 TLS가 QUIC과 어떻게 결합되는지에 대한 상세는 {{QUIC-TLS}}에서 자세히 제공된다.
 
 
-## Transport Parameters
+## 전송 파라미터 {#transport-parameters}
 
-During connection establishment, both endpoints make authenticated declarations
-of their transport parameters.  These declarations are made unilaterally by each
-endpoint.  Endpoints are required to comply with the restrictions implied by
-these parameters; the description of each parameter includes rules for its
-handling.
+연결 설립 동안, 두 엔드포인트는 전송 파라미터의 인증된 선언 (authenticated
+declarations)을 구성 (make)한다. 이 선언은 각 엔드포인트에 의해 일방적으로
+이루어진다. 엔드포인트는 이 파라미터에 의해 함축되는 제한을 따르도록 요구된다;
+각 파라미터의 설명은 그 핸들링에 대한 규칙을 포함한다.
 
-The format of the transport parameters is the TransportParameters struct from
-{{figure-transport-parameters}}.  This is described using the presentation
-language from Section 3 of {{!I-D.ietf-tls-tls13}}.
+전송 파라미터의 포맷은 {{figure-transport-parameters}}에 있는
+TransportParameters와 같다. 이 포맷은 {{!I-D.ietf-tls-tls13}}의 3절에 있는
+표현 언어를 사용하여 묘사되었다.
 
 ~~~
    uint32 QuicVersion;
@@ -1163,178 +1162,168 @@ language from Section 3 of {{!I-D.ietf-tls-tls13}}.
 ~~~
 {: #figure-transport-parameters title="Definition of TransportParameters"}
 
-The `extension_data` field of the quic_transport_parameters extension defined in
-{{QUIC-TLS}} contains a TransportParameters value.  TLS encoding rules are
-therefore used to encode the transport parameters.
+{{QUIC-TLS}}에서 정의된 quic_transport_parameters 확장의 `extension_data`
+필드는 TransportParameters 값을 가진다. 따라서 TLS 인코딩 규칙은 해당 전송
+파라미터를 인코딩하기 위해 사용된다.
 
-QUIC encodes transport parameters into a sequence of octets, which are then
-included in the cryptographic handshake.  Once the handshake completes, the
-transport parameters declared by the peer are available.  Each endpoint
-validates the value provided by its peer.  In particular, version negotiation
-MUST be validated (see {{version-validation}}) before the connection
-establishment is considered properly complete.
+QUIC은 전송 파라미터를 일련의 옥텟으로 인코딩하며, 그 뒤에 암호학적
+핸드셰이크에 포함된다. 핸드셰이크가 완료되면, 상대방에 의해 선언된 전송
+파라미터를 활용할 수 있다. 각 엔드포인트는 상대방이 제공한 값을 입증한다. \["MUST" 특히,
+버전 협상은 연결 설립이 적절히 완료되기 전에 반드시 입증되어야만 한다
+({{version-validation}}을 보라).\]
 
-Definitions for each of the defined transport parameters are included in
-{{transport-parameter-definitions}}.  Any given parameter MUST appear
-at most once in a given transport parameters extension.  An endpoint MUST
-treat receipt of duplicate transport parameters as a connection error of
-type TRANSPORT_PARAMETER_ERROR.
+정의된 전송 파라미터 각각에 대한 정의는 {{transport-parameter-definitions}}에
+포함되어 있다. \["MUST" 어떤 주어진 파라미터라도 주어진 전송 파라미터 확장에
+최대 한 번 나타나야만 한다.\] \["MUST" 엔드포인트는 중복 전송 파라미터의 수신을
+TRANSPORT_PARAMETER_ERROR 타입의 연결 오류로 다루어야만 한다.\]
 
 
-### Transport Parameter Definitions
+### 전송 파라미터 정의 {#transport-parameter-definitions}
 
-An endpoint MUST include the following parameters in its encoded
-TransportParameters:
+\["MUST" 엔드포인트는 인코딩된 TransportParameters에 다음의 파라미터를
+포함하여야만 한다\]:
 
 initial_max_stream_data (0x0000):
 
-: The initial stream maximum data parameter contains the initial value for the
-  maximum data that can be sent on any newly created stream.  This parameter is
-  encoded as an unsigned 32-bit integer in units of octets.  This is equivalent
-  to an implicit MAX_STREAM_DATA frame ({{frame-max-stream-data}}) being sent on
-  all streams immediately after opening.
+: '초기 스트림 최대 데이터' 파라미터는 새로이 만들어진 스트림에 보내질 수 있는
+  최대 데이터(량)의 초기값을 담는다. 이 파라미터는 옥텟 단위로 unsigned 32 비트
+  정수형으로 인코딩된다. 이는 (의역-체크 필요: 연결을) 연 뒤에 곧바로 모든
+  스트림에 보내지는 암묵적 MAX_STREAM_DATA 프레임
+  ({{frame-max-stream-data}})과 동등하다.
 
 initial_max_data (0x0001):
 
-: The initial maximum data parameter contains the initial value for the maximum
-  amount of data that can be sent on the connection.  This parameter is encoded
-  as an unsigned 32-bit integer in units of octets.  This is equivalent to
-  sending a MAX_DATA ({{frame-max-data}}) for the connection immediately after
-  completing the handshake.
+: '초기 최대 데이터' 파라미터는 연결에서 보내질 수 있는 최대 데이터의 양의
+  초기값을 담는다. 이 파라미터는 옥텟 단위로 unsigned 32 비트 정수형으로
+  인코딩된다. 이는 핸드셰이크 완료 후에 해당 연결에 즉시 MAX_DATA (의역-체크
+  필요: 프레임을) ({{frame-max-data}}) 보내는 것과 동등하다.
 
 idle_timeout (0x0003):
 
-: The idle timeout is a value in seconds that is encoded as an unsigned 16-bit
-  integer.  The maximum value is 600 seconds (10 minutes).
+: 유휴 연결 타임아웃 (idle timeout)은 초 단위로 unsigned 16 비트 정수형으로
+  인코딩된다. 최대값은 600 초 (10분)이다.
 
-An endpoint MAY use the following transport parameters:
+\["MAY" 엔드포인트는 다음 전송 파라미터를 사용할 수도 있다.\]:
 
 initial_max_bidi_streams (0x0002):
 
-: The initial maximum bidirectional streams parameter contains the initial
-  maximum number of application-owned bidirectional streams the peer may
-  initiate, encoded as an unsigned 16-bit integer.  If this parameter is absent
-  or zero, application-owned bidirectional streams cannot be created until a
-  MAX_STREAM_ID frame is sent.  Note that a value of 0 does not prevent the
-  cryptographic handshake stream (that is, stream 0) from being used. Setting
-  this parameter is equivalent to sending a MAX_STREAM_ID
-  ({{frame-max-stream-id}}) immediately after completing the handshake
-  containing the corresponding Stream ID. For example, a value of 0x05 would be
-  equivalent to receiving a MAX_STREAM_ID containing 20 when received by a
-  client or 17 when received by a server.
+: 초기 최대 양방향 스트림 파라미터는 상대방(peer)이 시작할 수 있는 응용-소유의
+  양방향 스트림의 갯수에 대한 초기 최댓값을 unsigned 16 비트 정수형으로
+  인코딩해서 담는다. 이 파라미터가 없거나 0으로 설정되면, 응용-소유의 양방향
+  스트림은 MAX_STREAM_ID 프레임이 보내질 때까지 생성될 수 없다. 0 값이 암호학적
+  핸드셰이크 스트림 (즉, 스트림 0)의 사용을 막는 건 아님을 주의하라. 이
+  파라미터를 세팅하는 것은 핸드셰이크가 끝난 직후에 대응 Stream ID를 담은
+  MAX_STREAM_ID ({{frame-max-stream-id}}) (프레임)을 보내는 것과 동등하다. 예를
+  들어, 0x05 값은 클라이언트가 20을 담은 MAX_STREAM_ID 프레임을 받거나 서버가
+  17을 담은 MAX_STREAM_ID 프레임을 받는 것과 동등하다.
 
 initial_max_uni_streams (0x0008):
 
-: The initial maximum unidirectional streams parameter contains the initial
-  maximum number of application-owned unidirectional streams the peer may
-  initiate, encoded as an unsigned 16-bit integer.  If this parameter is absent
-  or zero, unidirectional streams cannot be created until a MAX_STREAM_ID frame
-  is sent.  Setting this parameter is equivalent to sending a MAX_STREAM_ID
-  ({{frame-max-stream-id}}) immediately after completing the handshake
-  containing the corresponding Stream ID. For example, a value of 0x05 would be
-  equivalent to receiving a MAX_STREAM_ID containing 18 when received by a
-  client or 19 when received by a server.
+: 초기 최대 단방향 스트림 파라미터는 상대방(peer)이 시작할 수 있는 응용-소유의
+  단방향 스트림의 갯수에 대한 초기 최댓값을 unsigned 16 비트 정수형으로
+  인토깅해서 담는다. 이 파라미터가 없거나 0으로 설정되면, (응용-소유의) 단방향
+  스트림은 MAX_STREAM_ID 프레임이 보내질 때까지 생성될 수 없다. 이 파라미터를
+  설정하는 것은 핸드셰이크가 끝난 직후에 대응 Stream ID를 담은 MAX_STREAM_ID
+  ({{frame-max-stream-id}}) 프레임을 보내는 것과 동등하다. 예를 들어, 0x05 값은
+  클라이언트가 18을 담은 MAX_STREAM_ID를 받거나 서버가 19를 받는 것과 동등하다.
 
 max_packet_size (0x0005):
 
-: The maximum packet size parameter places a limit on the size of packets that
-  the endpoint is willing to receive, encoded as an unsigned 16-bit integer.
-  This indicates that packets larger than this limit will be dropped.  The
-  default for this parameter is the maximum permitted UDP payload of 65527.
-  Values below 1200 are invalid.  This limit only applies to protected packets
-  ({{packet-protected}}).
+: 최대 패킷 크기 파라미터는 엔드포인트가 받을 수 있는 (willing to receive)
+  패킷 크기 한도를 unsigned 16 비트 정수형으로 인코딩하여 정한다. 이 파라미터는
+  이 한계보다 큰 패킷이 폐기될 것임을 알린다. 이 파라미터의 기본값은 UDP
+  페이로드로 허용되는 최대치인 65527 (옥텟)이다. 1200보다 작은 값은 유효하지
+  않다. 이 한계는 보호된 패킷에만 적용된다 ({{packet-protected}}).
 
 ack_delay_exponent (0x0007):
 
-: An 8-bit unsigned integer value indicating an exponent used to decode the ACK
-  Delay field in the ACK frame, see {{frame-ack}}.  If this value is absent, a
-  default value of 3 is assumed (indicating a multiplier of 8).  The default
-  value is also used for ACK frames that are sent in Initial, Handshake, and
-  Retry packets.  Values above 20 are invalid.
+: ACK 프레임에서 ACK Delay 필드를 디코딩할 때 사용할 (2의) 지수값을 unsigned
+  8-bit 정수형 값이다. {{frame-ack}}를 참고하라. 만약 이 값이 부재하면,
+  기본값으로 3이 가정된다 (8을 곱함을 의미한다). 기본값은 초기화, 핸드셰이크,
+  재시도 패킷으로 인해 보내진 ACK 프레임에도 사용된다. 20을 넘는 값은 유효하지
+  않다.
 
-A server MAY include the following transport parameters:
+\["MAY" 서버는 다음 전송 파라미터를 포함할 수도 있다.\]:
 
 stateless_reset_token (0x0006):
 
-: The Stateless Reset Token is used in verifying a stateless reset, see
-  {{stateless-reset}}.  This parameter is a sequence of 16 octets.
+: 무상태 재시작 토큰 (Stateless Reset Token)은 무상태 재시작을 검증하기 위해
+  사용된다. {{stateless-reset}}를 참고하라. 이 파라미터는 일련의 16 옥텟들로
+  이루어져 있다.
 
 preferred_address (0x0004):
 
-: The server's Preferred Address is used to effect a change in server address at
-  the end of the handshake, as described in {{preferred-address}}.
+: 서버의 선호 주소 (Preferred Address)는 핸드셰이크 마지막에 서버 주소를 바꾸기
+  위해 사용되며, 이는 {{preferred-address}}에 설명되어 있다.
 
-A client MUST NOT include a stateless reset token or a preferred address.  A
-server MUST treat receipt of either transport parameter as a connection error of
-type TRANSPORT_PARAMETER_ERROR.
+\["MUST NOT" 클라이언트는 반드시 무상태 재시작 토큰 또는 선호 주소를
+포함하여서는 안된다.\] \["MUST" 서버는 반드시 무상태 재시작 토큰 또는 선호 주소
+파라미터를 받았을 경우 타입 TRANSPORT_PARAMTER_ERROR의 연결 에러로 처리해야만 한다.\]
 
 
-### Values of Transport Parameters for 0-RTT {#zerortt-parameters}
+### 0-RTT를 위한 전송 파라미터 값 {#zerortt-parameters}
 
-A client that attempts to send 0-RTT data MUST remember the transport parameters
-used by the server.  The transport parameters that the server advertises during
-connection establishment apply to all connections that are resumed using the
-keying material established during that handshake.  Remembered transport
-parameters apply to the new connection until the handshake completes and new
-transport parameters from the server can be provided.
+\["MUST" 0-RTT 데이터 전송을 시도하는 클라이언트는 서버에서 사용되는 전송
+파라미터를 반드시 기억해야만 한다.\] 연결을 설립할 때 서버가 알린 전송
+파라미터는 해당 핸드셰이크 과정에 설립된 키 재료 (keying material)을 사용하여
+재개된 모든 연결에 적용된다. 기억된 전송 파라미터는 핸드셰이크가 끝난 뒤에
+서버가 새 전송 파라미터를 제공할 수 있게 될 때까지 새 연결에 적용된다.
 
-A server can remember the transport parameters that it advertised, or store an
-integrity-protected copy of the values in the ticket and recover the information
-when accepting 0-RTT data.  A server uses the transport parameters in
-determining whether to accept 0-RTT data.
+서버는 알린 전송 파라미터를 기억할 수 있으며, 또는 티켓 (ticket)에 해당 값들을
+무결성이 보호된 채로 복사해두고 0-RTT 데이터를 수락할 때 해당 정보를 복구할 수
+있다. 서버는 0-RTT 데이터를 수락할지를 결정하기 위해 전송 파라미터를 사용할 수
+있다.
 
-A server MAY accept 0-RTT and subsequently provide different values for
-transport parameters for use in the new connection.  If 0-RTT data is accepted
-by the server, the server MUST NOT reduce any limits or alter any values that
-might be violated by the client with its 0-RTT data.  In particular, a server
-that accepts 0-RTT data MUST NOT set values for initial_max_data or
-initial_max_stream_data that are smaller than the remembered value of those
-parameters.  Similarly, a server MUST NOT reduce the value of
-initial_max_bidi_streams or initial_max_uni_streams.
+\["MAY" 서버는 0-RTT를 수락 한 뒤에 새 연결에서 다른 전송 파라미터 값을
+사용하고 싶을 수 있다.\] 서버가 0-RTT 데이터를 수락한다면, \["MUST NOT" 서버는
+반드시 어떤 한계값을 줄여선 안 되고, 클라이언트가 보낸 0-RTT 데이터가 현재의
+값을 위반하더라도 이를 대체하면 안 된다.\] \["MUST NOT" 특히, 0-RTT 데이터를
+수락한 서버는 initial_max_data 또는 initial_max_stream_data 파라미터에 대해
+기존에 기억한 것보다 작은 값을 설정하면 안된다.\] 유사하게, \["MUST NOT" 서버는
+initial_max_bidi_streams 또는 initial_max_uni_streams의 값을 줄여선 안된다.\]
+(역주: 번역 검토 필요)
 
-Omitting or setting a zero value for certain transport parameters can result in
-0-RTT data being enabled, but not usable.  The following transport parameters
-SHOULD be set to non-zero values for 0-RTT: initial_max_bidi_streams,
+특정 전송 파라미터를 생략하거나 0으로 설정하는 것은 0-RTT 데이터를 활성화해놓고
+쓰지 못하는 결과를 낳을 수 있다. (따라서) \["SHOULD" 다음 파라미터는 0-RTT
+데이터에 대해 0이 아닌 값으로 설정해야 한다\]: initial_bidi_streams,
 initial_max_uni_streams, initial_max_data, initial_max_stream_data.
 
-The value of the server's previous preferred_address MUST NOT be used when
-establishing a new connection; rather, the client should wait to observe the
-server's new preferred_address value in the handshake.
+\["MUST NOT" 서버의 이전 preferred_address 값은 새 연결을 설립할 때 사용해서는
+안된다\]; 그보다는 클라이언트가 핸드셰이크 과정에서 새로운 서버의 새
+preferred_address 값을 기다려서 관찰해야 할 것이다.
 
-A server MUST reject 0-RTT data or even abort a handshake if the implied values
-for transport parameters cannot be supported.
-
-
-### New Transport Parameters
-
-New transport parameters can be used to negotiate new protocol behavior.  An
-endpoint MUST ignore transport parameters that it does not support.  Absence of
-a transport parameter therefore disables any optional protocol feature that is
-negotiated using the parameter.
-
-New transport parameters can be registered according to the rules in
-{{iana-transport-parameters}}.
+\["MUST" 서버는 전송 파라미터 값을 지원할 수 없을 것으로 여겨지면 0-RTT
+데이터를 거절하거나 아예 핸드셰이크를 무산시켜야만 한다.]
 
 
-### Version Negotiation Validation {#version-validation}
+### 새 전송 파라미터
 
-Though the cryptographic handshake has integrity protection, two forms of QUIC
-version downgrade are possible.  In the first, an attacker replaces the QUIC
-version in the Initial packet.  In the second, a fake Version Negotiation packet
-is sent by an attacker.  To protect against these attacks, the transport
-parameters include three fields that encode version information.  These
-parameters are used to retroactively authenticate the choice of version (see
-{{version-negotiation}}).
+새 전송 파라미터를 새로운 프로토콜 동작을 협상하기 위해 사용할 수 있다.
+\["MUST" 엔드포인트는 지원하지 않는 전송 파라미터는 무시하여야만 한다.\] 따라서
+특정 전송 파라미터의 부재는 해당 파라미터를 사용하는 협상 대상인 선택적 프로토콜
+기능 (feature)을 비활성하게 한다.
 
-The cryptographic handshake provides integrity protection for the negotiated
-version as part of the transport parameters (see {{transport-parameters}}).  As
-a result, attacks on version negotiation by an attacker can be detected.
+새로운 전송 파라미터는 {{iana-transport-parameters}}에 명시된 규칙에 따라
+등록될 수 있다.
 
-The client includes the initial_version field in its transport parameters.  The
-initial_version is the version that the client initially attempted to use.  If
-the server did not send a Version Negotiation packet {{packet-version}}, this
-will be identical to the negotiated_version field in the server transport
-parameters.
+
+### 버전 협상 입증 {#version-validation}
+
+암호학적 핸드셰이크가 무결성 (integrity)을 보호하지만, 두 종류의 QUIC 버전
+다운그레이드가 가능하다. 첫 번째는, 공격자가 초기화 패킷의 QUIC 버전을 바꾸는
+것이다. 두 번째는, 공격자가 가짜 버전 협상 패킷을 보내는 것이다. 이
+공격들로부터 보호하기 위해서, 전송 파라미터는 버전 정보를 인코딩하는 세 필드를
+포함한다. 이 파라미터들이 버전 선택을 소급적으로 (retroactively) 인증하기 위해
+사용된다 ({{version-negotiation}}을 보라).
+
+암호학적 핸드셰이크는 전송 파라미터의 일부로써 협상 버전에 대한 무결성 보호를
+제공한다 ({{transport-parameters}}를 보라). 결과적으로, 공격자가 버전 협상에
+관해 공격할 경우 이는 탐지될 수 있다.
+
+클라이언트는 전송 파라미터에 initial_version 필드를 포함한다. initial_version은
+클라이언트가 초기에 사용하려고 시도하는 버전이다. 서버가 버전 협상 패킷
+{{packet-version}}을 보내지 않으면, 이 값은 서버 전송 파라미터의
+negotiated_version 필드값과 같아야 한다.
 
 A server that processes all packets in a stateful fashion can remember how
 version negotiation was performed and validate the initial_version value.
