@@ -574,8 +574,9 @@ STREAM 프레임 (또는 프레임들)을 나른다. 이 패킷의 스트림은 
 
 \["MUST" 초기화 패킷을 담은 UDP 데이터그램의 페이로드는 1200 옥텟 이상으로
 확장되어야 하는데 ({{packetization}}을 보라), PADDING 프레임들을 초기화 패킷에
-더하는 방법 그리고/또는 초기 패킷에 0-RTT 패킷을 합하는 방법을 써야 한다
+더하는 방법 그리고/또는 초기화 패킷에 0-RTT 패킷을 합하는 방법을 써야 한다
 ({{packet-coalesce}}를 보라).\]
+(역주: initial packet은 문맥 상 Initial packet을 말하는 것으로 판단됨.)
 
 클라이언트는 '초기 암호화된 핸드셰이크 메시지'를 담은 모든 패킷에 대해 초기화
 패킷 타입을 사용한다. 이 상황은 '초기 암호화된 메시지'를 포함한 새 패킷을
@@ -1325,427 +1326,419 @@ preferred_address 값을 기다려서 관찰해야 할 것이다.
 {{packet-version}}을 보내지 않으면, 이 값은 서버 전송 파라미터의
 negotiated_version 필드값과 같아야 한다.
 
-A server that processes all packets in a stateful fashion can remember how
-version negotiation was performed and validate the initial_version value.
-
-A server that does not maintain state for every packet it receives (i.e., a
-stateless server) uses a different process. If the initial_version matches the
-version of QUIC that is in use, a stateless server can accept the value.
-
-If the initial_version is different from the version of QUIC that is in use, a
-stateless server MUST check that it would have sent a Version Negotiation packet
-if it had received a packet with the indicated initial_version.  If a server
-would have accepted the version included in the initial_version and the value
-differs from the QUIC version that is in use, the server MUST terminate the
-connection with a VERSION_NEGOTIATION_ERROR error.
-
-The server includes both the version of QUIC that is in use and a list of the
-QUIC versions that the server supports.
-
-The negotiated_version field is the version that is in use.  This MUST be set by
-the server to the value that is on the Initial packet that it accepts (not an
-Initial packet that triggers a Retry or Version Negotiation packet).  A client
-that receives a negotiated_version that does not match the version of QUIC that
-is in use MUST terminate the connection with a VERSION_NEGOTIATION_ERROR error
-code.
-
-The server includes a list of versions that it would send in any version
-negotiation packet ({{packet-version}}) in the supported_versions field.  The
-server populates this field even if it did not send a version negotiation
-packet.
-
-The client validates that the negotiated_version is included in the
-supported_versions list and - if version negotiation was performed - that it
-would have selected the negotiated version.  A client MUST terminate the
-connection with a VERSION_NEGOTIATION_ERROR error code if the current QUIC
-version is not listed in the supported_versions list.  A client MUST terminate
-with a VERSION_NEGOTIATION_ERROR error code if version negotiation occurred but
-it would have selected a different version based on the value of the
-supported_versions list.
-
-When an endpoint accepts multiple QUIC versions, it can potentially interpret
-transport parameters as they are defined by any of the QUIC versions it
-supports.  The version field in the QUIC packet header is authenticated using
-transport parameters.  The position and the format of the version fields in
-transport parameters MUST either be identical across different QUIC versions, or
-be unambiguously different to ensure no confusion about their interpretation.
-One way that a new format could be introduced is to define a TLS extension with
-a different codepoint.
-
-
-## Stateless Retries {#stateless-retry}
-
-A server can process an initial cryptographic handshake messages from a client
-without committing any state. This allows a server to perform address validation
-({{address-validation}}), or to defer connection establishment costs.
-
-A server that generates a response to an initial packet without retaining
-connection state MUST use the Retry packet ({{packet-retry}}).  This packet
-causes a client to reset its transport state and to continue the connection
-attempt with new connection state while maintaining the state of the
-cryptographic handshake.
-
-A server MUST NOT send multiple Retry packets in response to a client handshake
-packet.  Thus, any cryptographic handshake message that is sent MUST fit within
-a single packet.
-
-In TLS, the Retry packet type is used to carry the HelloRetryRequest message.
-
-
-## Proof of Source Address Ownership {#address-validation}
-
-Transport protocols commonly spend a round trip checking that a client owns the
-transport address (IP and port) that it claims.  Verifying that a client can
-receive packets sent to its claimed transport address protects against spoofing
-of this information by malicious clients.
-
-This technique is used primarily to avoid QUIC from being used for traffic
-amplification attack.  In such an attack, a packet is sent to a server with
-spoofed source address information that identifies a victim.  If a server
-generates more or larger packets in response to that packet, the attacker can
-use the server to send more data toward the victim than it would be able to send
-on its own.
-
-Several methods are used in QUIC to mitigate this attack.  Firstly, the initial
-handshake packet is padded to at least 1200 octets.  This allows a server to
-send a similar amount of data without risking causing an amplification attack
-toward an unproven remote address.
-
-A server eventually confirms that a client has received its messages when the
-cryptographic handshake successfully completes.  This might be insufficient,
-either because the server wishes to avoid the computational cost of completing
-the handshake, or it might be that the size of the packets that are sent during
-the handshake is too large.  This is especially important for 0-RTT, where the
-server might wish to provide application data traffic - such as a response to a
-request - in response to the data carried in the early data from the client.
-
-To send additional data prior to completing the cryptographic handshake, the
-server then needs to validate that the client owns the address that it claims.
-
-Source address validation is therefore performed during the establishment of a
-connection.  TLS provides the tools that support the feature, but basic
-validation is performed by the core transport protocol.
-
-A different type of source address validation is performed after a connection
-migration, see {{migrate-validate}}.
-
-
-### Client Address Validation Procedure
-
-QUIC uses token-based address validation.  Any time the server wishes to
-validate a client address, it provides the client with a token.  As long as the
-token cannot be easily guessed (see {{token-integrity}}), if the client is able
-to return that token, it proves to the server that it received the token.
-
-During the processing of the cryptographic handshake messages from a client, TLS
-will request that QUIC make a decision about whether to proceed based on the
-information it has.  TLS will provide QUIC with any token that was provided by
-the client.  For an initial packet, QUIC can decide to abort the connection,
-allow it to proceed, or request address validation.
-
-If QUIC decides to request address validation, it provides the cryptographic
-handshake with a token.  The contents of this token are consumed by the server
-that generates the token, so there is no need for a single well-defined format.
-A token could include information about the claimed client address (IP and
-port), a timestamp, and any other supplementary information the server will need
-to validate the token in the future.
-
-The cryptographic handshake is responsible for enacting validation by sending
-the address validation token to the client.  A legitimate client will include a
-copy of the token when it attempts to continue the handshake.  The cryptographic
-handshake extracts the token then asks QUIC a second time whether the token is
-acceptable.  In response, QUIC can either abort the connection or permit it to
-proceed.
+상태를 유지하는 방식으로 모든 패킷을 처리하는 서버는 버전 협상이 어떻게
+수행되었는지를 기억할 수 있으며, initial_version 값을 입증할 수 있을 것이다.
+
+받은 패킷들으로 인한 상태를 유지하지 않는 서버 (즉, 무상태 서버)는 다른 과정을
+사용한다. 사용 중인 QUIC 버전과 initial_version이 맞으면, 무상태 서버는 그 값을
+수락한다.
+
+사용 중인 QUIC 버전과 initial_version이 다르면, \["MUST" 무상태 서버는
+initial_version을 알려주는 패킷을 받았을 때 버전 협상 패킷을 보냈는지
+확인하여야만 한다\]. 서버가 initial_version데 포함된 버전을 수락한 적이 있고,
+사용 중인 QUIC 버전과 다르면, \["MUST" VERSION_NEGOTIATION_ERROR 에러와 함께
+연결을 종료해야만 한다.\]
+
+서버는 사용 중인 QUIC 버전과 서버가 지원하는 QUIC 버전의 리스트를 포함하고
+있다.
+(역주: 가지고 있다가 적절할 듯)
+
+negotiated_version 필드는 사용 중인 버전을 말한다. 서버는 이 필드 값을
+(재시작이나 버전 협상 패킷을 야기한 초기화 패킷이 아니라) 수락된 초기화 패킷에
+있는 것으로 설정해야 한다. 클라이언트가 negotiated_version을 받았는데 사용 중인
+QUIC 버전과 맞지 않다면, \["MUST" VERSION_NEGOTIATION_ERROR 에러 코드와 함께
+연결을 종료해야만 한다.\]
+
+서버는 supported_version 필드에 버전 협상 패킷 ({{packet-version}})에 포함되어
+전송될 수 있는 버전의 리스트를 포함한다. 서버는 버전 협상 패킷을 보낸 적 없다고
+하더라도 이 필드를 덧붙인다.
+
+클라이언트는 negotiated_version이 supported_versions 리스트에 포함되어 있는지를
+입증하며, 또한 버전 협상이 수행되었다면 협상된 버전이 선택되었는지도 입증한다.
+\["MUST" 클라이언트는 현재 QUIC 버전이 supported_versions 리스트에 올라있지
+않으면 VERSION_NEGOTIATION_ERROR 에러와 함께 연결을 중단해야만 한다.\]
+\["MUST" 클라이언트는 버전 협상이 진행되었는데도 supported_versions 리스트에
+올라와 있는 다른 버전 값이 사용되었다면 VERSION_NEGOTIATION_EROR 에러와 함께
+중단하여야만 한다.\]
+
+엔드포인트가 여러 QUIC 버전을 수락할 때, 지원하는 QUIC 버전 중 특정 버전에
+정의된 전송 파라미터라고 해석할 잠재적 가능성이 있다. QUIC 패킷 헤더의 버전
+필드는 전송 파라미터를 사용해 인증된다. \["MUST" 전송 파라미터에서 버전 필드의
+위치와 형식은 다른 QUIC 버전이라도 동일하여야만 하며, 또는 전송 파라미터를
+해석에 관해 혼란이 발생하지 않도록 명확히 (unambiguously) 달라야만 한다.\]
+새 포맷을 등장시키는 한 방법은 다른 코드포인트로 TLS 확장을 정의하는 것이다.
+(역주: 마지막 문장의 동작을 이해할 필요가 있음.)
+
+
+## 무상태 재시도 {#stateless-retry}
+
+서버는 아무런 상태를 기억 (commit)하지 않고 클라이언트가 보내온 초기 암호학적
+핸드셰이크 메세지를 처리할 수 있다. 서버가 주소 입증 ({{address-validation}})을
+수행하거나 연결 설립 비용을 미룰 (defer) 수 있다.
+
+\["MUST" 연결 상태를 유지하지 (retain) 않고 초기화 패킷에의 응답을 생성하는
+서버는 재시도 패킷 ({{packet-retry}})을 사용해야만 한다.\] 이 패킷은
+클라이언트가 전송 상태를 재시작하여, 암호학적 핸드셰이크 상태 유지 없이 새 연결
+상태로 연결 시도를 지속하게 한다.
+
+\["MUST NOT" 서버는 클라이언트의 핸드셰이크 패킷에 대응할 때 재시도 패킷을 여러
+개 보내서는 안 된다.\] 따라서, \["MUST" 보내진 암호학적 핸드셰이크 메시지는
+단일 패킷 내에 들어가야만 한다\]
+
+TLS에서, 재시도 패킷 타입은 HelloRetryRequest 메시지를 담는데 사용한다.
+
+
+## 소스 주소 소유권 증명 {#address-validation}
+
+전송 프로토콜은 클라이언트가 소유했다고 주장하는 전송 계층 주소 (IP 및 포트)를
+체크하기 위해 한 RTT (round trip)을 소비한다. 클라이언트가 주장하는 전송 주소로
+패킷을 받을 수 있는지를 확인(verify)하면, 악의적 클라이언트가 해당 정보를
+스푸핑하려는 것을 방어할 수 있다.
+
+이 테크닉은 주로 QUIC이 트래픽 증폭 (amplification) 공격으로 사용되는 걸 막기
+위해 사용된다. 트래픽 증폭 공격은 피해자 (victim)의 스푸핑된 소스 주소 정보
+를 포함한 패킷을 서버에 보낸다. 서버가 그런 패킷에 대응해 더 많은 또는 더 큰
+패킷을 생성하게 되면, 공격자는 스스로 피해자를 공격하기 보다 서버를 사용해
+더 많은 데이터를 보내려고 할 수 있다.
+
+이 공격을 완화시키고자 QUIC에서는 여러 방법을 사용한다. 먼저, 초기화 핸드셰이크
+패킷은 최소 1200 옥텟 이상 패딩되어야 한다. 이를 통해 서버가 클라이언트로 받는
+패킷의 양이 비슷해지므로 증명되지 않은 원격 주소로 증폭 공격을 야기할 위험이
+없어진다.
+(역주: 초기화 핸드셰이크 패킷은 초기화 패킷을 가리키는 말로 보는게 적절하다.
+1200 도 검색해서 추가 검증 필요.)
+
+서버는 암호학적 핸드셰이크가 성공적으로 완료될 때에야 클라이언트가 해당
+메시지들을 받았음을 최종적으로 확인한다. 이는 서버가 핸드셰이크 완료로 인한
+계산 비용을 피하고 싶거나 핸드셰이크 과정에 보내진는 패킷의 크기가 너무 클 때
+불충분할 수 있다. 서버는 클라이언트가 보내온 이른 (early) 데이터에 응답하고자 -
+요청에의 응답과 같은 - 어플리케이션 데이터 트래픽을 제공하고자 할 때와 같은
+0-RTT 상황에서 이는 매우 중요하다.
+
+암호학적 핸드셰이크를 완료하기 전에 추가 데이터를 보내고자, 서버는 클라이언트가
+소유했다고 주장하는 주소를 입증할 필요가 있다.
+
+따라서 소스 주소 입증이 연결 설립 과정에서 수행된다. TLS는 이 기능을 제공할
+툴을 제공하지만, 기본 입증은 핵심 전송 프로토콜에 의해 수행된다.
+
+다른 종류의 소스 주소 입증 연결 이전 후에 수행된다. {{migrate-validate}}를
+보라.
+
+
+### 클라이언트 주소 입증 과정
+
+QUIC은 토큰 기반의 주소 입증을 사용한다. 서버가 클라이언트 주소를 입증하고자 할
+때마다, 서버는 클라이언트에게 토큰을 제공한다. 토큰이 쉽게 추측될 수 없는 한
+({{token-integrity}}를 보라), 클라이언트는 그 토큰을 반환할 수 있으며, 서버는
+클라이언트가 토큰을 받았음을 증명할 수 있다.
+
+클라이언트로부터 온 암호학적 핸드셰이크 메시지 처리를 하는 동안, TLS는 QUIC이
+가지고 있느 정보를 바탕으로 진행할지에 대한 결정을 내리도록 요청할 것이다.
+TLS는 QUIC에게 클라이언트가 제공한 토큰을 제공할 것이다. 초기화 패킷에서,
+QUIC은 연결을 중단할지를 결정하거나, 진행하거나, 주소 입증을 요청할 수 있다.
+
+QUID이 요청 주소 입증을 요청하기로 결정하면, 암호학적 핸드셰이크에 토큰이
+주어진다. 토큰의 내용은 토큰을 생성한 서버에 의해 소비되므로, 잘 정의된 단일
+포맷일 필요는 없다. 토큰은 클라이언트가 주장한 주소 (IP와 포트)에 대한 정보를
+포함할 수 있고, 서버가 추후 토큰을 입증하기 위해 필요할 다른 부수 정보도
+포함할 수 있다.
+
+암호학적 핸드셰이크는 클라이언트에 주소 입증 토큰을 보내서 입증을 진행
+(enact)하도록 할 책임이 있다. 정당한 클라이언트라면 핸드셰이크를 지속하려
+하면서 토큰의 복사본을 포함시킬 것이다. 암호학적 핸드셰이크는 토큰을 추출한 뒤
+이 토큰을 수락할지에 대해 두 번째로 QUIC에게 묻게 된다. 이에 대한 응답으로,
+QUIC은 연결을 중단하거나 진행하도록 허용할 수 있다.
+
+\["MAY" 연결은 연결 입증 없이 - 또는 매우 제한적인 입증만으로 - 수락될 수도
+있지만\], \["SHOULD" 서버는 입증되지 않은 주소로 보내는 데이터를 제한해야
+한다.\] 암호학적 핸드셰이크의 성공적 종료는 암묵적으로 클라이언트카 서버로부터
+패킷을 받았다는 증명을 제공한다.
+
+
+### 세션 재개에서의 주소 입증
+
+\["MAY" 서버는 후속 연결에 사용할 수 있는 주소 입증 토큰을 연결 기간 동안
+제공할 수 있다.\] 서버가 클라이언트가 보낸 0-RTT 데이터의 응답을 하느라
+잠재적으로 상당한 양의 데이터를 보낼 수 있기 때문에, 주소 입증은 0-RTT에서
+특히 중요하다.
 
-A connection MAY be accepted without address validation - or with only limited
-validation - but a server SHOULD limit the data it sends toward an unvalidated
-address.  Successful completion of the cryptographic handshake implicitly
-provides proof that the client has received packets from the server.
-
-
-### Address Validation on Session Resumption
-
-A server MAY provide clients with an address validation token during one
-connection that can be used on a subsequent connection.  Address validation is
-especially important with 0-RTT because a server potentially sends a significant
-amount of data to a client in response to 0-RTT data.
+(반면, 세션) 재개 시 다른 타입의 토큰이 필요하다. 핸드셰이크 때 생성된 토큰과
+달리, 토큰이 생성된 시점과 생성된 후에 사용되는 시점 사이에는 어느 정도
+시간차가 있을 수 있다. 따라서, \["SHOULD" 재개에 사용되는 토큰은 만료 시간을
+포함하여야 한다.\] 두 다른 연결에서 같은 클라이언트 포트 번호를 갖는 일도
+희박하다; 따라서 포트를 입증하는 건 성공하기 어렵다.
+
+이 토큰은 연결을 설립한 직후에 암호학적 핸드셰이크로 제공될 수 있다. QUIC은
+상당한 시간이 지나거나 클라이언트 주소가 어떤 이유에서 바뀐다면 업데이트한
+토큰을 생성해야 할 수 있다 ({{migration}}을 보라). 암호학적 핸드셰이크는
+업데이트한 토큰을 클라이언트에게 제공할 책임이 있다. TLS에서는 세션 재개 및
+0-RTT를 위해 사용되는 티켓 내에 토큰이 포함되며, 이 티켓은 NewSessionTicket
+메시지 안에 담긴다.
+
+
+### 주소 입증 토큰의 무결성 {#token-integrity}
+
+\["MUST" 주소 입증 토큰은 추측하기 어려워야만 한다.\] 토큰에 충분히 큰
+랜덤값을 포함시키는 걸로 충분할 수 있지만, 서버가 클라이언트로 보내는 값을
+기억하는가에 따라 충분할 수도 충분하지 않을 수도 있다.
+
+토큰 기반의 방안 (scheme)은 서버가 입증에 관련된 상태를 클라이언트로
+오프로드하는 걸 허용한다. 이런 설계가 동작하기 위해, 토큰은 클라이언트의
+수정이나 조작 (falsification)에 대한 무결성 보호로 보호 (cover)되어야만 한다.\]
+무결성 보호가 없다면, 악의적인 클라이언트는 서버가 승인한 토큰값을 생성하거나
+추측할 수 있을 것이다. 서버만이 토큰의 무결성 보호 키에 접근할 수 있어야 한다.
+
+TLS에서는 주소 입증 토큰이 종종 재개를 위한 비밀키 (resumption secret)와 같이
+TLS가 요구하는 정보와 묶일 수 있다. 이 경우, 무결성 보호를 추가하는 작업은
+암호학적 핸드셰이크 프로토콜로 위임될 수 있다. 만약 무결성 보호가 암호학적
+핸드셰이크로 위임된다면, 무결성 실패는 즉각적인 암호학적 핸드셰이크의 실패로
+귀결될 것이다. 무결성 보호가 QUIC에 의해 수행된다면, \["MUST" QUIC은 무결성
+체크가 PROTOCOL_VIOLATION 에러 코드와 함께 실패할 때 반드시 연결을 중단하여야만
+한다.\]
+(역주: resumption secret의 적절한 역어를 찾아야 함.)
+
+
+## 경로 입증 {#migrate-validate}
+
+경로 입증은 엔드포인트가 특정 경로를 통해 상대방에 도달할 수 있는지를 검증하기
+위해 사용된다. 즉, 특정 로컬 주소와 특정 상대 주소 간에 도달성을 검사하되,
+여기서 주소란 IP 주소와 포트의 순서쌍이다. 경로 입증은 패킷을 상대방으로 보내고
+받는 것이 가능한지 검사한다.
 
-A different type of token is needed when resuming.  Unlike the token that is
-created during a handshake, there might be some time between when the token is
-created and when the token is subsequently used.  Thus, a resumption token
-SHOULD include an expiration time.  It is also unlikely that the client port
-number is the same on two different connections; validating the port is
-therefore unlikely to be successful.
+경로 입증은 (연결을) 이전하려는 엔드포인트가 연결 이전 ({{migration}}과
+{{preferred-address}}를 보라)을 하는 동안 새로운 로컬 주소에서 상대방으로의
+도달성을 검증하기 위해 사용한다. 경로 입증은 상대방이 '연결을 이전하려는
+엔드포인트가 새로운 주소로 보낸 패킷을 받을 능력이 있는지'를 검증하기 위해서도
+사용된다. 즉, 연결을 이전하려는 엔드포인트로부터 받은 패킷이 스푸핑된 소스
+주소를 담은 것이 아닌지를 검사한다.
 
-This token can be provided to the cryptographic handshake immediately after
-establishing a connection.  QUIC might also generate an updated token if
-significant time passes or the client address changes for any reason (see
-{{migration}}).  The cryptographic handshake is responsible for
-providing the client with the token.  In TLS the token is included in the ticket
-that is used for resumption and 0-RTT, which is carried in a NewSessionTicket
-message.
-
-
-### Address Validation Token Integrity {#token-integrity}
-
-An address validation token MUST be difficult to guess.  Including a large
-enough random value in the token would be sufficient, but this depends on the
-server remembering the value it sends to clients.
-
-A token-based scheme allows the server to offload any state associated with
-validation to the client.  For this design to work, the token MUST be covered by
-integrity protection against modification or falsification by clients.  Without
-integrity protection, malicious clients could generate or guess values for
-tokens that would be accepted by the server.  Only the server requires access to
-the integrity protection key for tokens.
-
-In TLS the address validation token is often bundled with the information that
-TLS requires, such as the resumption secret.  In this case, adding integrity
-protection can be delegated to the cryptographic handshake protocol, avoiding
-redundant protection.  If integrity protection is delegated to the cryptographic
-handshake, an integrity failure will result in immediate cryptographic handshake
-failure.  If integrity protection is performed by QUIC, QUIC MUST abort the
-connection if the integrity check fails with a PROTOCOL_VIOLATION error code.
-
-
-## Path Validation {#migrate-validate}
-
-Path validation is used by an endpoint to verify reachability of a peer over a
-specific path.  That is, it tests reachability between a specific local address
-and a specific peer address, where an address is the two-tuple of IP address and
-port.  Path validation tests that packets can be both sent to and received from
-a peer.
+경로 입증은 각 엔드포인트에서 어느 시점에서라도 사용 가능하다. 예를 들어,
+엔드포인트는 상대방이 일정 기간 동안 침묵 (quiescence)한 후에라도 해당 주소를
+아직 소유하고 있는지를 확인할 수도 있다.
+
+경로 입증은 NAT traversal 메커니즘으로 설계되지 않았다. 비록 여기서 설명할
+메커니즘은 NAT traversal을 지원하는 NAT 바인딩 (binding) 생성에 효과적일 수도
+있지만, 엔드포인트 또는 그 상대방은 해당 경로에 패킷을 먼저 보내지 않고도
+패킷을 받을 수 있길 기대한다. 효과적인 NAT traversal은 여기서 제공되지 않는
+추가적인 동기화 메커니즘을 필요로 한다.
 
-Path validation is used during connection migration (see {{migration}} and
-{{preferred-address}}) by the migrating endpoint to verify reachability of a
-peer from a new local address. Path validation is also used by the peer to
-verify that the migrating endpoint is able to receive packets sent to the its
-new address.  That is, that the packets received from the migrating endpoint do
-not carry a spoofed source address.
+\["MAY" 엔드포인트는 경로 입증에 사용되는 PATH_CHALLENGE와 PATH_RESPONSE
+프레임을 다른 프레임과 묶을 수도 있다.\] 예를 들어, 엔드포인트는 PMTU
+디스커버리를 위한 PATH_CHALLENGE를 담도록 패킷을 채울 (pad) 수도 있고,
+또는 엔드포인트는 (상대방의 PATH_CHALLENGE에 대한) PATH_RESPONSE에 자신의
+PATH_CHALLENGE를 같이 묶을 수도 있다.
 
-Path validation can be used at any time by either endpoint.  For instance, an
-endpoint might check that a peer is still in possession of its address after a
-period of quiescence.
-
-Path validation is not designed as a NAT traversal mechanism. Though the
-mechanism described here might be effective for the creation of NAT bindings
-that support NAT traversal, the expectation is that one or other peer is able to
-receive packets without first having sent a packet on that path. Effective NAT
-traversal needs additional synchronization mechanisms that are not provided
-here.
 
-An endpoint MAY bundle PATH_CHALLENGE and PATH_RESPONSE frames that are used for
-path validation with other frames.  For instance, an endpoint may pad a packet
-carrying a PATH_CHALLENGE for PMTU discovery, or an endpoint may bundle a
-PATH_RESPONSE with its own PATH_CHALLENGE.
+### 개시 (Initiation)
 
+경로 입증을 개시하기 위해, 엔드포인트는 입증할 경로에 랜덤 페이로드를 담은
+PATH_CHALLENGE 프레임을 보낸다.
 
-### Initiation
+\["MAY" 엔드포인트는 패킷 손실을 핸들링하기 위해 추가 PATH_CHALLENGE 프레임을
+보낼 수도 있다.\] \["SHOULD NOT" 엔드포인트는 초기화 패킷보다 더 자주
+PATH_CHALLENGE 프레임을 보내서는 안 된다.\] 이는 연결 이전이 새로운 연결을
+설립하는 것보다 새 경로에 로드를 더 주는 일을 방지하기 위함이다.
 
-To initiate path validation, an endpoint sends a PATH_CHALLENGE frame containing
-a random payload on the path to be validated.
+\["MUST" 엔드포인트는 '상대방의 응답'과 '응답으로 비롯된 (causative)
+PATH_CHALLENGE'를 연관시킬 수 있도록 모든 PATH_CHALLENGE 프레임에 새로운
+랜덤 데이터를 사용해야만 한다.\]
 
-An endpoint MAY send additional PATH_CHALLENGE frames to handle packet loss.  An
-endpoint SHOULD NOT send a PATH_CHALLENGE more frequently than it would an
-Initial packet, ensuring that connection migration is no more load on a new path
-than establishing a new connection.
 
-The endpoint MUST use fresh random data in every PATH_CHALLENGE frame so that it
-can associate the peer's response with the causative PATH_CHALLENGE.
+### 응답
 
+PATH_CHALLENGE 프레임을 받을 때, \["MUST" 엔드포인트는 다음 조건을 따르면서
+PATH_CHALLENGE 프레임에 담긴 데이터를 PATH_REPSONSE 프레임에 그대로 반복
+(echo)함으로써 즉각 응답해야만 한다.\] PATH_CHALLENGE가 스푸핑된 주소로부터
+보내졌을 수 있으므로, \["MAY" 엔드포인트는 PATH_RESPONSE" 프레임을 보내는
+(전송)률을 제한할 수도 있다.\] 또한 \["MAY 엔드포인트는 제한보다 높은
+(전송)률로 응답하게 될 때 PATH_CHALLENGES 프레임을 조용히 패기할 수도 있다.\]
 
-### Response
+패킷을 상대방에게 보내고 받을 수 있도록, \["MUST" PATH_RESPONSE는
+PATH_CHALLENGE를 트리거한 경로로 보내져야만 한다\] 즉, PATH_CHALLENGE를 받을 때
+사용한 것과 같은 로컬 주소에서, 받은 PATH_CHALLENGE와 동일한 원격 주소로.
+(역주: 번역 검토 필요)
 
-On receiving a PATH_CHALLENGE frame, an endpoint MUST respond immediately by
-echoing the data contained in the PATH_CHALLENGE frame in a PATH_RESPONSE frame,
-with the following stipulation.  Since a PATH_CHALLENGE might be sent from a
-spoofed address, an endpoint MAY limit the rate at which it sends PATH_RESPONSE
-frames and MAY silently discard PATH_CHALLENGE frames that would cause it to
-respond at a higher rate.
 
-To ensure that packets can be both sent to and received from the peer, the
-PATH_RESPONSE MUST be sent on the same path as the triggering PATH_CHALLENGE:
-from the same local address on which the PATH_CHALLENGE was received, to the
-same remote address from which the PATH_CHALLENGE was received.
+### 완료
 
+새 주소는 PATH_RESPONSE 프레임이 기존에 PATH_CHALLENGE에 담아 보낸 데이터를
+담고 있을 때 유효한 것으로 간주된다. 확인응답 (ACK)은 악의적 상대에 의해
+스푸핑될 수 있으므로, PATH_CHALLENGE 프레임을 담은 패킷의 확인응답의 수신은
+적절한 입증이 아니다.
 
-### Completion
+성공적인 경로 입증을 위해, \["MUST" PATH_RESPONSE 프레임은 대응하는
+PATH_CHALLENGE가 보내진 주소와 같은 원격 주소로부터 받아졌어야만 한다.\]
+만약 PATH_RESPONSE 프레임이 PATH_CHALLENGE가 보내졌던 원격 주소와 다른 원격
+주소로부터 받아졌다면, 설령 데이터가 PATH_CHALLENGE를 이용해 보냈던 데이터와
+맞아떨어져도 경로 입증은 실패한 것으로 간주된다.
 
-A new address is considered valid when a PATH_RESPONSE frame is received
-containing data that was sent in a previous PATH_CHALLENGE. Receipt of an
-acknowledgment for a packet containing a PATH_CHALLENGE frame is not adequate
-validation, since the acknowledgment can be spoofed by a malicious peer.
+\["MUST" 추가적으로, PATH_RESPONSE 프레임은 대응하는 PATH_CHALLENGE가 보내진
+것과 같은 로컬 주소에서 받아저야만 한다.\] 만약 PATH_RESPONSE PATH_CHALLENGE를
+보냈던 로컬 주소와 다른 로컬 주소에서 받았다면, 설령 데이터가 PATH_CHALLENGE를
+이용해 보냈던 데이터와 맞아떨어져도 경로 입증은 실패한 것으로 간주된다. 따라서,
+엔드포인트는 PATH_RESPONSE 프레임이 PATH_CHALLENGE 프레임과 같은 페이로드를
+가지고 같은 경로로 받아진 경우에만 그 경로가 유효하다고 간주한다.
+(역주: 말이 계속 복잡하지만, PATH_CHALLENGE와 PATH_RESPONSE를 받고 보낸 IP
+주소와 포트는 바뀌면 안 된다는 것이다.)
 
-For path validation to be successful, a PATH_RESPONSE frame MUST be received
-from the same remote address to which the corresponding PATH_CHALLENGE was
-sent. If a PATH_RESPONSE frame is received from a different remote address than
-the one to which the PATH_CHALLENGE was sent, path validation is considered to
-have failed, even if the data matches that sent in the PATH_CHALLENGE.
 
-Additionally, the PATH_RESPONSE frame MUST be received on the same local address
-from which the corresponding PATH_CHALLENGE was sent.  If a PATH_RESPONSE frame
-is received on a different local address than the one from which the
-PATH_CHALLENGE was sent, path validation is considered to have failed, even if
-the data matches that sent in the PATH_CHALLENGE.  Thus, the endpoint considers
-the path to be valid when a PATH_RESPONSE frame is received on the same path
-with the same payload as the PATH_CHALLENGE frame.
+### 포기
 
+\["SHOULD" 엔드포인트는 PATH_CHALLENGE 프레임을 보낸 뒤에 또는 일정 시간이 지난
+뒤에 경로 입증을 포기해야 한다.\] 타이머를 설정할 때, 구현은 새로운 RTT가
+기존의 RTT보다 길 수 있음을 주의 (caution)하여야 한다.
 
-### Abandonment
+엔드포인트는 새로운 경로에 다른 프레임을 포함하는 패킷을 받을 수도 있지만,
+경로 입증의 성공을 위해서는 적절한 데이터를 포함한 PATH_RESPONSE 프레임이
+필수적임을 주의하라.
 
-An endpoint SHOULD abandon path validation after sending some number of
-PATH_CHALLENGE frames or after some time has passed.  When setting this timer,
-implementations are cautioned that the new path could have a longer round-trip
-time than the original.
+경로 입증이 실패하면, 경로는 사용할 수 없다고 간주된다. 이는 꼭 연결의 실패를
+함축하는 것은 아니다 - 엔드포인트는 다른 경로로 적절히 패킷을 계속 보낼 수
+있다. 어느 경로도 이용할 수 없다면, 엔드포인트는 새로운 경로가 사용가능해지기를
+기다리거나 연결을 닫을 수 있다.
 
-Note that the endpoint might receive packets containing other frames on the new
-path, but a PATH_RESPONSE frame with appropriate data is required for path
-validation to succeed.
+경로 입증은 실패 외의 다른 이유로 버려질 수 있다. 주로, 기존 경로에의 경로
+입증이 진행중일 때 새로운 경로로의 연결 이전이 개시되면 발생한다.
 
-If path validation fails, the path is deemed unusable.  This does not
-necessarily imply a failure of the connection - endpoints can continue sending
-packets over other paths as appropriate.  If no paths are available, an endpoint
-can wait for a new path to become available or close the connection.
 
-A path validation might be abandoned for other reasons besides
-failure. Primarily, this happens if a connection migration to a new path is
-initiated while a path validation on the old path is in progress.
+## 연결 이전 {#migration}
 
+QUIC은 연결이 엔드포인트 주소 (즉, IP 주소 및/또는 포트)의 변경에도 살아남을 수
+있도록 허용한다. 예를 들어 이러한 변경은 엔드포인트가 새로운 네트워크로
+이전함으로써 발생할 수 있다. 이 절에서는 엔드포인트가 새로운 주소로 이전하는
+과정을 설명한다.
 
-## Connection Migration {#migration}
+\["MUST NOT" 엔드포인트는 핸드셰이크가 끝나고 엔드포인트가 1-RTT 키를 가지기
+전에 연결 이전을 개시하면 안된다.\]
 
-QUIC allows connections to survive changes to endpoint addresses (that is, IP
-address and/or port), such as those caused by a endpoint migrating to a new
-network.  This section describes the process by which an endpoint migrates to a
-new address.
+이 문서는 {{preferred-address}}에 설명된 것을 제외하고는 새로운 클라이언트
+주소로의 연결 이전로 한정한다. 클라이언트는 모든 이전의 개시에 책임이 있다.
+서버는 클라이언트가 보내온, 프로빙이 아닌 패킷 (non-probing packet)을 볼 때까지
+해당 클라이언트의 주소로 프로빙이 아닌 패킷 ({{probing}}을 보라)을 보내지
+않는다. 클라이언트가 모르는 서버 주소로부터 패킷을 받았다면, \["MAY"
+클라이언트는 해당 패킷을 폐기할 것이다.\]
 
-An endpoint MUST NOT initiate connection migration before the handshake is
-finished and the endpoint has 1-RTT keys.
 
-This document limits migration of connections to new client addresses, except as
-described in {{preferred-address}}. Clients are responsible for initiating all
-migrations.  Servers do not send non-probing packets (see {{probing}}) toward a
-client address until it sees a non-probing packet from that address.  If a
-client receives packets from an unknown server address, the client MAY discard
-these packets.
+### 새로운 경로로의 프로빙 {#probing}
 
+\["MAY" 엔드포인트는 (자신의) 새로운 로컬 주소로 연결을 이전하기 전에 경로 입증
+{{migrate-validate}}을 사용해 새로운 로컬 주소에서 상대방으로의 도달성을
+프로빙할 수 있다.\] 경로 입증의 실패는 새 경로가 이 연결에 대해 사용할 수
+없음을 의미할 뿐이다. 경로 입증 실패는 유효한 대체 경로가 아예 없는 것이
+아니라면 연결 종료 (end)를 야기하지 않는다.
 
-### Probing a New Path {#probing}
+엔드포인트는 (자신의) 새 로컬 주소에서 보낸 프로브의 새 연결 ID를 사용한다.
+추가 논의는 {{migration-linkability}}를 보라.
+(역주: 중요한 파트)
 
-An endpoint MAY probe for peer reachability from a new local address using path
-validation {{migrate-validate}} prior to migrating the connection to the new
-local address.  Failure of path validation simply means that the new path is not
-usable for this connection.  Failure to validate a path does not cause the
-connection to end unless there are no valid alternative paths available.
+상대방으로부터 PATH_CHALLENGE 프레임을 받았다는 것은 상대방이 어떤 경로에 대한
+도달성을 프로빙했음을 알려준다. 엔드포인트는 {{migrate-validate}}에 따른
+응답으로 PATH_RESPONSE를 보낸다.
 
-An endpoint uses a new connection ID for probes sent from a new local address,
-see {{migration-linkability}} for further discussion.
+PATH_CHALLENGE, PATH_RESPONSE, 그리고 PADDING 프레임은 "프로빙 프레임"이라
+하며, 다른 모든 프레임은 "프로빙이 아닌 프레임"이라 한다. 프로빙 프레임만
+포함한 패킷은 "프로빙 패킷"이라 하고, 다른 프레임을 하나라도 포함한 패킷은
+"프로빙이 아닌 패킷"이라 한다.
 
-Receiving a PATH_CHALLENGE frame from a peer indicates that the peer is probing
-for reachability on a path. An endpoint sends a PATH_RESPONSE in response as per
-{{migrate-validate}}.
 
-PATH_CHALLENGE, PATH_RESPONSE, and PADDING frames are "probing frames", and all
-other frames are "non-probing frames".  A packet containing only probing frames
-is a "probing packet", and a packet containing any other frame is a "non-probing
-packet".
+### 연결 이전 개시 {#initiating-migration}
 
+엔드포인트는 (자신의) 새로운 로컬 주소로부터 프로빙 프레임이 아닌 프레임을 담은
+패킷을 보냄으로써 해당 로컬 주소로 연결을 이전할 수 있다.
 
-### Initiating Connection Migration {#initiating-migration}
+각 엔드포인트는 연결 설립 동안 상대방의 주소를 입증한다. 따라서 연결을
+이전하려는 엔드포인트는 상대방은 상대방의 현 주소로 받으려 할 것임을 알고,
+상대방에게 (패킷을) 보낼 수 있다. 결국 엔드포인트는 먼저 상대방의 주소에 대한
+유효성을 확인하지 않더라도 (자신의) 새 로컬 주소로 이전할 수 있다.
+(역주: send to its peer knowing의 의미가 명확하지 않다.)
 
-A endpoint can migrate a connection to a new local address by sending packets
-containing frames other than probing frames from that address.
+이전을 할 때, 새 경로는 엔드포인트의 현재 송신 (전송)률을 지원하지 않을 수
+있다. 따라서 엔드포인트는 {{migration-cc}}에 설명된 것처럼 혼잡 컨트롤러를
+재시작한다.
 
-Each endpoint validates its peer's address during connection establishment.
-Therefore, a migrating endpoint can send to its peer knowing that the peer is
-willing to receive at the peer's current address. Thus an endpoint can migrate
-to a new local address without first validating the peer's address.
+새 경로로 보낸 데이터의 확인응답을 받는 것은 새 주소에서 상대방에의 도달성의
+증명으로 처리된다. 확인응답을 아무 경로에서나 받을 수도 있으므로, 새 경로를
+따라 되돌아오는 도달성은 확립되지 않는다. 새 경로를 따라 되돌아오는 도달성을
+설립하기 확립하기 위해, \["MAY" 엔드포인트는 새 경로에서의 경로 입증
+{{migrate-validate}}을 개시할 수도 있다.\]
 
-When migrating, the new path might not support the endpoint's current sending
-rate. Therefore, the endpoint resets its congestion controller, as described in
-{{migration-cc}}.
 
-Receiving acknowledgments for data sent on the new path serves as proof of the
-peer's reachability from the new address.  Note that since acknowledgments may
-be received on any path, return reachability on the new path is not
-established. To establish return reachability on the new path, an endpoint MAY
-concurrently initiate path validation {{migrate-validate}} on the new path.
+### 연결 이전에 응답 {#migration-response}
 
+새 상대방 주소로 프로빙이 아닌 프레임을 담은 패킷을 받으면, 상대방이 해당
+주소로 이전했다는 것을 알게 된다.
 
-### Responding to Connection Migration {#migration-response}
+그런 패킷에 대한 응답으로, \["MUST" 엔드포인트는 새 상대방 주소에 후속 패킷을
+보내기 시작해야만 하며, 입증되지 않은 주소의 상대방의 소유권을 검증하기 위한
+경로 입증 ({{migrate-validate}})을 개시해야만 한다.\]
 
-Receiving a packet from a new peer address containing a non-probing frame
-indicates that the peer has migrated to that address.
+\["MAY" 엔드포인트는 입증되지 않은 상대방 주소로 데이터를 보낼 수 있다.\]
+\["MUST" 하지만 {{address-spoofing}}과 {{on-path-spoofing}}에 설명된 것과 같은
+잠재적 공격에 대해 방어해야만 한다.\] \["MAY" 엔드포인트는 상대방의 주소를
+최근에 확인해보았다면 (seen), 상대방의 주소의 입증을 생략할 수도 있다.\]
+(역주: 패킷은 보내야되지만, 데이터를 보낼 필요는 없다는 것을 의미함.)
 
-In response to such a packet, an endpoint MUST start sending subsequent packets
-to the new peer address and MUST initiate path validation ({{migrate-validate}})
-to verify the peer's ownership of the unvalidated address.
+엔드포인트는 (역주: 주소를 바꾸어야 하는 상황이라면) 프로빙이 아닌 패킷 중
+가장 높은 번호를 갖는 패킷에 대한 응답으로 패킷을 보낼 주소만을 변경한다. 이는
+엔드포인트가 재정렬된 패킷을 받는 경우 과거 상대방의 주소로 패킷을 보내지
+않음을 보장한다.
+(역주: 번역 검토 필요)
 
-An endpoint MAY send data to an unvalidated peer address, but it MUST protect
-against potential attacks as described in {{address-spoofing}} and
-{{on-path-spoofing}}.  An endpoint MAY skip validation of a peer address if that
-address has been seen recently.
+엔드포인트가 프로빙이 아닌 패킷을 보내는 주소를 변경한 뒤에, 엔드포인트는
+다른 주소로의 경로 입증을 버릴 수 있다.
 
-An endpoint only changes the address that it sends packets to in response to the
-highest-numbered non-probing packet. This ensures that an endpoint does not send
-packets to an old peer address in the case that it receives reordered packets.
+새 상대방 주소로부터 패킷을 받는 것은 상대방에서의 NAT 리바인딩의 결과일 수
+있다.
 
-After changing the address to which it sends non-probing packets, an endpoint
-could abandon any path validation for other addresses.
+새 클라이언트 주소를 검증한 뒤에, \["SHOULD" 서버는 클라이언트에게 새 주소 입증
+토큰 ({{address-validation}})을 보내야 한다.\]
 
-Receiving a packet from a new peer address might be the result of a NAT
-rebinding at the peer.
 
-After verifying a new client address, the server SHOULD send new address
-validation tokens ({{address-validation}}) to the client.
+#### 상대방에 의한 주소 스푸핑의 핸들링 {#address-spoofing}
 
+엔드포인트가 의도하지 않은 호스트로 지나친 양의 데이터를 보내도록 상대방이
+상대방 자신의 소스 주소를 스푸핑하는 것이 가능하다.  만약 엔드포인트가
+스푸핑을 하는 상대방보다 더 많은 데이터를 보내는 상황이라면, 공격자가 피해자로
+생성하는 데이터의 양을 증폭하기 위해 연결 이전을 사용할지도 모른다.
 
-#### Handling Address Spoofing by a Peer {#address-spoofing}
+{{migration-response}}에서 설명하였듯, 엔드포인트는 상대방이 새 주소를 소유하고
+있는지를 확인하기 위해 상대방의 새로운 주소를 입증하는 것이 요구된다. 상대방의
+주소가 유효한 것으로 여겨질 때까지, \["MUST" 엔드포인트는 이 주소로 데이터를
+보내는 (전송률)을 제한해야만 한다.\] \["MUST NOT" 엔드포인트는 절대로 '추정된
+RTT 동안 최소 혼잡 윈도우 ({{QUIC-RECOVERY}}에 정의된 kMinimumWindow)에
+상당하는 데이터'보다 많은 양의 데이터를 보내서는 안된다.\] 이 제한이 없으면
+엔드포인트는 의심없는 (unsuspecting) 피해자에게 서비스 거부 (denial of service)
+공격을 하는데 사용될 위험이 생긴다. 엔드포인트는 해당 주소로의 RTT 측정을 하지
+않을 수 있기 때문에, \["SHOULD" 해당 추정치는 초기 기본값으로 설정되어야 한다
+({{QUIC-RECOVERY}}를 보라).\]
 
-It is possible that a peer is spoofing its source address to cause an endpoint
-to send excessive amounts of data to an unwilling host.  If the endpoint sends
-significantly more data than the spoofing peer, connection migration might be
-used to amplify the volume of data that an attacker can generate toward a
-victim.
+엔드포인트가 {{migration-response}}에 설명한 것처럼 상대방 주소의 입증을
+생략한다면, 보내는 (전송)률을 제한할 필요가 없다.
 
-As described in {{migration-response}}, an endpoint is required to validate a
-peer's new address to confirm the peer's possession of the new address.  Until a
-peer's address is deemed valid, an endpoint MUST limit the rate at which it
-sends data to this address.  The endpoint MUST NOT send more than a minimum
-congestion window's worth of data per estimated round-trip time (kMinimumWindow,
-as defined in {{QUIC-RECOVERY}}).  In the absence of this limit, an endpoint
-risks being used for a denial of service attack against an unsuspecting victim.
-Note that since the endpoint will not have any round-trip time measurements to
-this address, the estimate SHOULD be the default initial value (see
-{{QUIC-RECOVERY}}).
 
-If an endpoint skips validation of a peer address as described in
-{{migration-response}}, it does not need to limit its sending rate.
+#### 경로 상의 공격자에 의한 주소 스푸핑의 핸들링 {#on-path-spoofing}
 
+경로 상의 공격자는 원 패킷보다 먼저 도착하는 패킷을 통해 스푸핑된 주소로 원
+패킷을 복사하고 포워딩하기 위해 거짓 (spurious) 연결 이전을 야기할 수 있다.
+스푸핑된 주소를 가진 패킷은 이전중인 연결에서 온 것처럼 보일 수 있고, 원 패킷은
+중복으로 보여서 폐기될 수 있다. 거짓 이전 후에, (스푸핑된) 소스 주소의 입증은
+실패할 것인데, 왜냐면 (스푸핑된) 소스 주소의 엔티티는 PATH_CHALLENGE 프레임을
+받아서 응답하고 싶더라도 읽거나 응답하는데 필수적인 암호학적 키가 없기
+때문이다.
 
-#### Handling Address Spoofing by an On-path Attacker {#on-path-spoofing}
+그런 거짓 이전으로 인해 연결이 실패하는 걸 막기 위해, \["MUST" 엔드포인트는
+새 상대방 주소의 입증에 실패할 때 가장 최근에 입증되었던 상대방의 주소를
+사용하도록 되돌려야만 한다.
 
-An on-path attacker could cause a spurious connection migration by copying and
-forwarding a packet with a spoofed address such that it arrives before the
-original packet.  The packet with the spoofed address will be seen to come from
-a migrating connection, and the original packet will be seen as a duplicate and
-dropped. After a spurious migration, validation of the source address will fail
-because the entity at the source address does not have the necessary
-cryptographic keys to read or respond to the PATH_CHALLENGE frame that is sent
-to it even if it wanted to.
+만약 엔드포인트가 가장 최근에 입증되었던 상대방의 주소에 관한 상태가 없으면,
+\["MUST" 모든 연결 상태를 폐기함으로써 연결을 조용히 닫아야만 한다.\] 이는
+일반적으로 해당 연결에 대한 새 패킷이 핸들링되는 결과를 낳는다. \["MAY" 예를
+들어, 엔드포인트는 추가 수신 (incoming) 패킷에의 대응으로 무상태 재시작을 보낼
+수도 있다.\]
 
-To protect the connection from failing due to such a spurious migration, an
-endpoint MUST revert to using the last validated peer address when validation of
-a new peer address fails.
-
-If an endpoint has no state about the last validated peer address, it MUST close
-the connection silently by discarding all connection state. This results in new
-packets on the connection being handled generically. For instance, an endpoint
-MAY send a stateless reset in response to any further incoming packets.
-
-Note that receipt of packets with higher packet numbers from the legitimate peer
-address will trigger another connection migration.  This will cause the
-validation of the address of the spurious migration to be abandoned.
+정당한 상대방 주소로부터 높은 패킷 번호를 가진 패킷의 수신은 다른 연결 이전을
+트리거할 것임을 주의하라. 이는 거짓 이전의 주소의 입증을 버리는 결과를 낳을
+것이다.
 
 
 ### Loss Detection and Congestion Control {#migration-cc}
