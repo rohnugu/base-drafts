@@ -1741,190 +1741,190 @@ RTT 동안 최소 혼잡 윈도우 ({{QUIC-RECOVERY}}에 정의된 kMinimumWindo
 것이다.
 
 
-### Loss Detection and Congestion Control {#migration-cc}
+### 손실 탐지와 혼잡 제어 {#migration-cc}
 
-The capacity available on the new path might not be the same as the old path.
-Packets sent on the old path SHOULD NOT contribute to congestion control or RTT
-estimation for the new path.
+새 경로에서 활용가능한 용량 (capacity)는 기존 경로와는 같지 않을 것이다.
+\["SHOULD NOT" 기존 경로에서 보내진 패킷은 새 경로에서의 혼잡 제어나 RTT 추정에
+기여해서는 안된다.\]
 
-On confirming a peer's ownership of its new address, an endpoint SHOULD
-immediately reset the congestion controller and round-trip time estimator for
-the new path.
+새 주소에 대한 상대방의 소유권을 확인하고자, \["SHOULD" 엔드포인트는 새 경로에
+대한 혼잡 컨트롤러와 RTT 추정기 (estimator)를 재시작해야 한다.\]
 
-An endpoint MUST NOT return to the send rate used for the previous path unless
-it is reasonably sure that the previous send rate is valid for the new path.
-For instance, a change in the client's port number is likely indicative of a
-rebinding in a middlebox and not a complete change in path.  This determination
-likely depends on heuristics, which could be imperfect; if the new path capacity
-is significantly reduced, ultimately this relies on the congestion controller
-responding to congestion signals and reducing send rates appropriately.
+\["MUST NOT" 엔드포인트는 기존에 송신 (전송)률이 새 경로에서 유효하다는
+합리적인 확신이 없는 한 기존 경로에서 사용되었던 송신 (전송)률로 돌아가선 절대
+안된다.\] 예를 들어, 클라이언트의 포트 번호 변경은 미들박스에서 재바인딩으로
+인한 것일 수 있고, 그 때에는 경로가 완전히 바뀌는 게 아닐 수 있다. 이러한
+판단은 휴리스텍이 의존할 것이고, 이는 완벽하지 않다; 새 경로의 용량이 충분히
+줄었다면 결과적으로 이는 혼잡 신호 (congestion signal)에 대응하여 적절히 송신
+(전송)률을 줄인 혼잡 컨트롤러에 의존한 것이다.
 
-There may be apparent reordering at the receiver when an endpoint sends data and
-probes from/to multiple addresses during the migration period, since the two
-resulting paths may have different round-trip times.  A receiver of packets on
-multiple paths will still send ACK frames covering all received packets.
+연결 이전 (migration) 기간동안 엔드포인트가 여러 주소에서/로 데이터와 프로브를
+보낼 때, 수신측은 명백히 재정렬을 할 수 있다. 왜냐면 두 결과 경로가 다른 RTT를
+가지고 있을 수 있기 때문이다. 여러 경로에서 패킷을 받은 수신측은 모든 수신
+킷을 커버하는 ACK 프레임을 계속 (still) 보낼 것이다.
 
-While multiple paths might be used during connection migration, a single
-congestion control context and a single loss recovery context (as described in
-{{QUIC-RECOVERY}}) may be adequate.  A sender can make exceptions for probe
-packets so that their loss detection is independent and does not unduly cause
-the congestion controller to reduce its sending rate.  An endpoint might arm a
-separate alarm when a PATH_CHALLENGE is sent, which is disarmed when the
-corresponding PATH_RESPONSE is received.  If the alarm fires before the
-PATH_RESPONSE is received, the endpoint might send a new PATH_CHALLENGE, and
-restart the alarm for a longer period of time.
-
-
-### Privacy Implications of Connection Migration {#migration-linkability}
-
-Using a stable connection ID on multiple network paths allows a passive observer
-to correlate activity between those paths.  An endpoint that moves between
-networks might not wish to have their activity correlated by any entity other
-than their peer. The NEW_CONNECTION_ID message can be sent to provide an
-unlinkable connection ID for use in case a peer wishes to explicitly break
-linkability between two points of network attachment.
-
-An endpoint that does not require the use of a connection ID should not request
-that its peer use a connection ID.  Such an endpoint does not need to provide
-new connection IDs using the NEW_CONNECTION_ID frame.
-
-An endpoint might need to send packets on multiple networks without receiving
-any response from its peer.  To ensure that the endpoint is not linkable across
-each of these changes, a new connection ID is needed for each network.  To
-support this, multiple NEW_CONNECTION_ID messages are needed.
-
-Upon changing networks an endpoint MUST use a previously unused connection ID
-provided by its peer.  This eliminates the use of the connection ID for linking
-activity from the same connection on different networks.  Protection of packet
-numbers ensures that packet numbers cannot be used to correlate activity.  This
-does not prevent other properties of packets, such as timing and size, from
-being used to correlate activity.
-
-Clients MAY change connection ID at any time based on implementation-specific
-concerns.  For example, after a period of network inactivity NAT rebinding might
-occur when the client begins sending data again.
-
-A client might wish to reduce linkability by employing a new connection ID and
-source UDP port when sending traffic after a period of inactivity.  Changing the
-UDP port from which it sends packets at the same time might cause the packet to
-appear as a connection migration. This ensures that the mechanisms that support
-migration are exercised even for clients that don't experience NAT rebindings or
-genuine migrations.  Changing port number can cause a peer to reset its
-congestion state (see {{migration-cc}}), so the port SHOULD only be changed
-infrequently.
-
-An endpoint that receives a successfully authenticated packet with a previously
-unused connection ID MUST use the next available connection ID for any packets
-it sends to that address.  To avoid changing connection IDs multiple times when
-packets arrive out of order, endpoints MUST change only in response to a packet
-that increases the largest received packet number.  Failing to do this could
-allow for use of that connection ID to link activity on new paths.  There is no
-need to move to a new connection ID if the address of a peer changes without
-also changing the connection ID.
+다중 경로가 연결 이전에서 사용되는 동안, ({{QUIC-RECOVERY}}에 설명되어 있듯)
+단일 혼잡 제어 컨텍스트와 단일 손실 복구 컨텍스트는 적절할 수 있다. 송신측은
+'손실 탐지가 독립적이 되도록 해서 혼잡 컨트롤러가 송신 (전송)률을 지나치게
+감소시키지 않도록' 프로브 패킷에는 예외를 둘 수 있다. 엔드포인트는
+PATH_CHALLENGE가 전송될 때 별도의 경보 (역주: 일종의 timeout?)를 설정하고,
+대응하는 PATH_RESPONSE를 받았을 때 해제한다. PATH_RESPONSE를 받기 전에 경보가
+울리면, 엔드포인트는 새로운 PATH_CHALLENGE를 보낼 것이고, 더 긴 시간으로 경보를
+재시작할 것이다.
+(역주: 문서 전체에서 probe, probe packet 등의 용어가 등장하곤 하는데, 정의로는
+프로빙, 프로빙 패킷이 맞다.)
 
 
-## Server's Preferred Address {#preferred-address}
+### 연결 이전의 프라이버시에의 영향 {#migration-linkability}
 
-QUIC allows servers to accept connections on one IP address and attempt to
-transfer these connections to a more preferred address shortly after the
-handshake.  This is particularly useful when clients initially connect to an
-address shared by multiple servers but would prefer to use a unicast address to
-ensure connection stability. This section describes the protocol for migrating a
-connection to a preferred server address.
+다중 네트워크 경로에 안정적인 연결 ID 하나를 사용하는 것은 수동형 관찰자
+(passive observer)가 여러 경로 간 활동내역을 연관시키는 작업을 할 수 있게
+만든다. 네트워크 간에 움직이는 엔드포인트는 상대방이 아닌 다른 엔티티가 그러한
+활동내역을 연관시키길 바라지 않을 것이다. 상대방이 두 네트워크 접속 포인트
+(points of network attachment) 사이의 연결성 (linkability)을 명시적으로 끊기
+바라는 경우, 연결되지 않은 (unlinkable) 연결 ID를 제공하기 위해
+NEW_CONNECTION_ID 메시지가 보내질 수 있다.
 
-Migrating a connection to a new server address mid-connection is left for future
-work. If a client receives packets from a new server address not indicated by
-the preferred_address transport parameter, the client SHOULD discard these
-packets.
+그런 연결 ID의 사용이 필요하지 않은 엔드포인트는 상대방이 그런 연결 ID를
+사용토록 요청해선 안된다. (역주: a를 the로 해석함. 맞는지 확인 필요) 그런
+엔드포인트는 NEW_CONNECTION_ID 프레임을 사용하는 새 연결 ID를 제공할 필요가
+없다.
 
-### Communicating A Preferred Address
+엔드포인트는 상대방의 응답을 받지 않은 상황에서 여러 네트워크에 패킷을 보낼
+필요가 있을 것이다. 해당 엔드포인트가 각 변화에 걸쳐 연결성이 없도록 하기 위해,
+새로운 연결 ID가 각 네트워크에 필요하다. 이를 지원하기 위해, 여러 개의
+NEW_CONNECTION_ID 메시지가 필요하다.
+(역주: 번역이 매우 이상함.)
 
-A server conveys a preferred address by including the preferred_address
-transport parameter in the TLS handshake.
+\["MUST" 네트워크 변경 시 엔드포인트는 이전에 사용되지 않은 연결 ID를
+사용해야만 한다.\] 이 요구사항은 연결 ID를 사용해 다른 네트워크에서 일어나는
+동일한 연결의 활동내역을 연결지으려는 행위를 제거한다. 패킷 번호의 보호는
+패킷 번호가 활동내역을 연관시키는데 사용될 수 없도록 보장한다. 이는 패킷의 다른
+성질들, 예를 들어 타이밍/크기와 활동내역 간의 상관성을 파악하는 걸 막지는
+않는다.
 
-Once the handshake is finished, the client SHOULD initiate path validation (see
-{{migrate-validate}}) of the server's preferred address using the connection ID
-provided in the preferred_address transport parameter.
+\["MAY" 클라이언트는 구현-별 문제에 기반해 아무때나 연결 ID를 바꿀 수도 있다.\]
+예를 들어, 일정 시간 네트워크가 사용되지 않은 뒤에, 클라이언트가 다시 데이터를
+전송하려고 하면 NAT 재바인딩이 일어날 수 있다.
 
-If path validation succeeds, the client SHOULD immediately begin sending all
-future packets to the new server address using the new connection ID and
-discontinue use of the old server address.  If path validation fails, the client
-MUST continue sending all future packets to the server's original IP address.
+클라이언트는 일정 기간의 비활성화 이후에 트래픽을 보낼 때 새 연결 ID와 새 UDP
+포트를 사용해 연결성을 줄이고자 할 수 있다. 특정 UDP 포트로 패킷을 보내는
+동시에 그 UDP 포트를 교체하려는 것은 패킷이 연결 이전으로 보이게 만들 수 있다.
+이는 NAT 재바인딩이나 올바른 (genuine) 이전을 경험하지 않은 클라이언트에게도
+연결을 지원하는 메커니즘이 발휘되도록 (exercised) 한다. 포트 번호를 변경하면
+상대방이 연결 상태를 재시작할 수 있으므로 ({{migration-cc}}를 보라), \["SHOULD"
+포트는 드물게 바뀌어야 한다.\]
+(역주: 번역 엉망. 역시 확인 필요)
 
-
-### Responding to Connection Migration
-
-A server might receive a packet addressed to its preferred IP address at any
-time after the handshake is completed.  If this packet contains a PATH_CHALLENGE
-frame, the server sends a PATH_RESPONSE frame as per {{migrate-validate}}, but
-the server MUST continue sending all other packets from its original IP address.
-
-The server SHOULD also initiate path validation of the client using its
-preferred address and the address from which it received the client probe.  This
-helps to guard against spurious migration initiated by an attacker.
-
-Once the server has completed its path validation and has received a non-probing
-packet with a new largest packet number on its preferred address, the server
-begins sending to the client exclusively from its preferred IP address.  It
-SHOULD drop packets for this connection received on the old IP address, but MAY
-continue to process delayed packets.
-
-
-### Interaction of Client Migration and Preferred Address
-
-A client might need to perform a connection migration before it has migrated to
-the server's preferred address.  In this case, the client SHOULD perform path
-validation to both the original and preferred server address from the client's
-new address concurrently.
-
-If path validation of the server's preferred address succeeds, the client MUST
-abandon validation of the original address and migrate to using the server's
-preferred address.  If path validation of the server's preferred address fails,
-but validation of the server's original address succeeds, the client MAY migrate
-to using the original address from the client's new address.
-
-If the connection to the server's preferred address is not from the same client
-address, the server MUST protect against potential attacks as described in
-{{address-spoofing}} and {{on-path-spoofing}}.  In addition to intentional
-simultaneous migration, this might also occur because the client's access
-network used a different NAT binding for the server's preferred address.
-
-Servers SHOULD initiate path validation to the client's new address upon
-receiving a probe packet from a different address.  Servers MUST NOT send more
-than a minimum congestion window's worth of non-probing packets to the new
-address before path validation is complete.
+\["MUST" 이전에 사용되지 않은 연결 ID를 사용하여 성공적으로 인증된 패킷을
+수신하는 엔드포인트는 해당 주소로 보내는 모든 패킷에 대해 다음 사용 가능한 연결
+ID를 사용해야만 한다.\] 패킷이 순서대로 도착하지 않을 때, 연결 ID를 여러 번
+변경하지 않도록 하려면, 엔드포인트는 가장 큰 수신 패킷 번호를 증가시키는 패킷에
+만 응답하여 (연결 ID를) 변경해야 한다. 이렇게 하지 않으면 해당 연결 ID가 새
+경로에서의 활동내역과 연관짓는 것이 가능할 수 있다. 연결 ID를 변경하지 않고
+상대방의 주소가 변경되는 경우, 새 연결 ID로 이동할 필요가 없다.
 
 
-## Connection Termination {#termination}
+## 서버의 선호 주소 {#preferred-address}
 
-Connections should remain open until they become idle for a pre-negotiated
-period of time.  A QUIC connection, once established, can be terminated in one
-of three ways:
+QUIC은 서버가 하나의 IP 주소에서 연결을 수락하도록 허용하며, 핸드셰이크 직후에
+더 선호되는 주소로 연결을 이전하려 시도하는 것도 허용한다. 이 허용은
+클라이언트가 여러 서버에서 공유하는 주소에 처음 연결하려고 할 때 특히
+유용하지만, 클라이언트는 연결 안정성을 보장하기 위해 유니캐스트 주소를 사용하길
+선호할 수도 있다. 이 절은 프로토콜이 선호하는 서버 주소로 연결을 이전하는
+프로토콜을 설명한다.
 
-* idle timeout ({{idle-timeout}})
-* immediate close ({{immediate-close}})
-* stateless reset ({{stateless-reset}})
+연결을 새로운 서버 주소로 이전할 때 연결 중 상태 (mid-connection)는 향후 과제로
+남겨둔다. 클라이언트가 preferred_address 전송 파라미터로부터 알려지지 않은 새
+서버 주소로부터 패킷을 받았다면, \["SHOULD" 클라이언트는 해당 패킷을 폐기해야
+한다.\]
+(역주: 영어가 도통 이상함...)
+
+### 선호 주소의 전달 (Communicating A Preferred Address)
+
+서버는 TLS 핸드셰이크에서 preferred_address 전송 파라미터를 포함한 선호 주소를
+전달한다.
+
+핸드셰이크가 끝나면, \["SHOULD" 클라이언트는 해당 연결 ID를 사용해서
+preferred_address 전송 파라미터에서 제공된 서버의 선호 주소에 대한 경로 입증
+({{migrate-validate}}를 보라)을 시작해야 한다.\]
+
+경로 입증이 성공하면, \["SHOULD" 클라이언트는 모든 미래 패킷을 새 연결 ID를
+사용한 새 서버 주소로 즉시 보내기 시작해야 하며, 기존 서버 주소의 사용을
+중단해야 한다.\] 경로 입증이 실패하면, \["MUST" 클라이언트는 원래대로 서버의
+원 IP 주소에 모든 미래 패킷을 계속 전달해야만 한다.\]
 
 
-### Closing and Draining Connection States {#draining}
+### 연결 이전에의 응답
 
-The closing and draining connection states exist to ensure that connections
-close cleanly and that delayed or reordered packets are properly discarded.
-These states SHOULD persist for three times the current Retransmission Timeout
-(RTO) interval as defined in {{QUIC-RECOVERY}}.
+서버는 핸드셰이크가 끝난 뒤에 아무때나 선호 IP 주소로 향해서 온 패킷을 받을 수
+있다. 해당 패킷이 PATH_CHALLENGE 프레임을 포함하고 있다면, 서버는
+{{migrate-validate}}에 따라서 PATH_RESPONSE 프레임을 보내지만, \["MUST" 서버는
+원 IP 주소를 이용해 다른 모든 패킷을 보내야만 한다.\]
+(역주: 번역 검토)
 
-An endpoint enters a closing period after initiating an immediate close
-({{immediate-close}}).  While closing, an endpoint MUST NOT send packets unless
-they contain a CONNECTION_CLOSE or APPLICATION_CLOSE frame (see
-{{immediate-close}} for details).
+\["SHOULD" 서버는 선호 주소와 서버가 클라이언트 프로브 패킷을 받은 주소를
+이용해 클라이언트의 경로 입증 또한 시작해야 한다.\] 이는 공격자에 의해 시작된
+가짜 이전을 방어하는데 도움이 된다.
 
-In the closing state, only a packet containing a closing frame can be sent.  An
-endpoint retains only enough information to generate a packet containing a
-closing frame and to identify packets as belonging to the connection.  The
-connection ID and QUIC version is sufficient information to identify packets for
-a closing connection; an endpoint can discard all other connection state.  An
-endpoint MAY retain packet protection keys for incoming packets to allow it to
-read and process a closing frame.
+서버가 경로 입증을 끝내고 선호 주소로 처음 본, 그리고 가장 큰 패킷 번호를 가진,
+프로빙이 아닌 패킷을 받았을 때, 서버는 선호 IP 주소를 이용해서만 클라이언트로
+(패킷을) 보내기 시작한다. \["SHOULD" 서버는 기존 IP 주소로 받은, 해당 연결에
+속한 패킷은 폐기해야 한다.\] 하지만 \["MAY" 서버는 지연된 패킷을 게속 처리할
+수도 있다.\]
+
+
+### 클라이언트에서의 (연결) 이전 및 선호 주소에 대한 인터랙션
+
+클라이언트는 서버의 선호 주소로 이전하기 전에 연결 이전을 수행할 필요가 있을 수
+있다. \["SHOULD"이런 경우, 클라이언트는 클라이언트의 새로운 주소를 사용해
+기존 서버 주소 및 선호 서버 주소를 동시에 경로 입증해야 한다.\]
+
+서버의 선호 주소의 경로 입증이 성공하면, \["MUST" 클라이언트는 원 서버 주소의
+경로 입증을 중단해야만 하며, 서버의 선호 주소를 사용해 이전해야만 한다.\]
+서버의 선호 주소의 경로 입증이 실패했지만 서버의 원 주소의 입증이 성공했다면,
+\["MAY" 클라이언트는 서버의 새 주소로부터 원 주소를 사용해 이전할 수도 있다.\]
+
+서버의 선호 주소로의 연결이 같은 클라이언트 주소에서 온 게 아니라면, \["MUST"
+서버는 {{address-spoofing}}과 {{on-path-spoofing}}에 묘사된 것과 같이 잠재적
+공격을 방어해야만 한다.\] 의도적인 동시 이전외에도, 클라이언트의 접속
+네트워크가 서버의 선호 주소에 대해 다른 NAT 바인딩을 사용해서 같은 상황이
+발생할 수도 있다.
+
+\["SHOULD" 서버는 다른 주소로 프로브 패킷을 받았을 때, 클라이언트의 새 주소로
+경로 입증을 시작해야 한다.\] \["MUST NOT" 서버는 경로 입증이 완료되기 전에
+새 주소로 프로빙이 아닌 패킷에 대한 최소 혼잡 윈도우 크기보다 더 많은 데이터를
+보내서는 절대 안된다.\]
+
+
+## 연결 종료 {#termination}
+
+연결은 미리 협상된 기간 동안 휴지 (idle)가 발생할 때까지 열려있어야 한다. 한번
+설립된 QUIC 연결은 다음 셋 중 하나의 이유로 중단될 수 있다:
+
+* 휴지 타임아웃 ({{idle-timeout}})
+* 즉시 종료 ({{immediate-close}})
+* 무상태 재시작 ({{stateless-reset}})
+
+
+### 종료중 연결 상태 및 배출중 (Draining) 연결 상태 {#draining}
+
+종료중 연결 상태 및 배출중 연결 상태는 연결이 깔끔하게 닫히고, 지연되거나
+재정렬된 패킷이 적절히 폐기되도록 보장하기 위해 존재한다. \["SHOULD" 이
+상태들은 {{QUIC-RECOVERY}}에 정의되어 있듯 현재 재전송 타임아웃 (RTO) 간격의
+3 배만큼 지속되어야 한다.
+
+엔드포인트는 즉시 종료 ({{immediate-close}})가 시작된 후에 종료중 기간에
+들어간다. 종료중 기간 동안, \["MUST NOT" 엔드포인트는 CONNECTION_CLOSE
+프레임이나 APPLICATION_CLOSE 프레임 (상세는 {{immediate-close}}를 보라)을 담은
+패킷이 아닌 한 패킷을 보내서는 절대 안 된다.\]
+
+종료중 상태에서, 종료 프레임을 담은 패킷만이 보내질 수 있다. 엔드포인트는
+종료중 프레임을 담은 패킷을 생성하고, 패킷이 연결에 속했는지를 판단하기 필요한
+정보만을 유지하한다. 연결 ID와 QUIC 버전은 종료중 연결에 대한 패킷을 특정하기에
+충분한 정보이다; 엔드포인트는 다른 모든 연결 상태는 폐기할 수 있다.
+엔드포인트는 종료중 프레임을 읽고 처리하기 위해 수신 패킷에 대한 패킷 보호 키를
+유지할 수 있다.
 
 The draining state is entered once an endpoint receives a signal that its peer
 is closing or draining.  While otherwise identical to the closing state, an
