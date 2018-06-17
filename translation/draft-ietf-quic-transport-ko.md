@@ -1907,63 +1907,66 @@ preferred_address 전송 파라미터에서 제공된 서버의 선호 주소에
 * 무상태 재시작 ({{stateless-reset}})
 
 
-### 종료중 연결 상태 및 배출중 (Draining) 연결 상태 {#draining}
+### 종결 연결 상태 및 마감 (Draining) 연결 상태 {#draining}
 
-종료중 연결 상태 및 배출중 연결 상태는 연결이 깔끔하게 닫히고, 지연되거나
+종결 연결 상태 및 마감 연결 상태는 연결이 깔끔하게 닫히고, 지연되거나
 재정렬된 패킷이 적절히 폐기되도록 보장하기 위해 존재한다. \["SHOULD" 이
 상태들은 {{QUIC-RECOVERY}}에 정의되어 있듯 현재 재전송 타임아웃 (RTO) 간격의
 3 배만큼 지속되어야 한다.
+(역주: Draining은 마르게 하거나 배출하고 있는 상황이지만, 음식점에서 마감 시간
+을 두고 아직 다 먹지 않은 손님을 내보내지 않는 상황을 상상하며 '마감'이라는
+표현으로 번역함.)
 
-엔드포인트는 즉시 종료 ({{immediate-close}})가 시작된 후에 종료중 기간에
-들어간다. 종료중 기간 동안, \["MUST NOT" 엔드포인트는 CONNECTION_CLOSE
+엔드포인트는 즉시 종료 ({{immediate-close}})가 시작된 후에 종결 기간에
+들어간다. 종결 기간 동안, \["MUST NOT" 엔드포인트는 CONNECTION_CLOSE
 프레임이나 APPLICATION_CLOSE 프레임 (상세는 {{immediate-close}}를 보라)을 담은
 패킷이 아닌 한 패킷을 보내서는 절대 안 된다.\]
 
-종료중 상태에서, 종료 프레임을 담은 패킷만이 보내질 수 있다. 엔드포인트는
-종료중 프레임을 담은 패킷을 생성하고, 패킷이 연결에 속했는지를 판단하기 필요한
-정보만을 유지하한다. 연결 ID와 QUIC 버전은 종료중 연결에 대한 패킷을 특정하기에
+종결 상태에서, 종료 프레임을 담은 패킷만이 보내질 수 있다. 엔드포인트는
+종결 프레임을 담은 패킷을 생성하고, 패킷이 연결에 속했는지를 판단하기 필요한
+정보만을 유지하한다. 연결 ID와 QUIC 버전은 종결 연결에 대한 패킷을 특정하기에
 충분한 정보이다; 엔드포인트는 다른 모든 연결 상태는 폐기할 수 있다.
-엔드포인트는 종료중 프레임을 읽고 처리하기 위해 수신 패킷에 대한 패킷 보호 키를
+엔드포인트는 종결 프레임을 읽고 처리하기 위해 수신 패킷에 대한 패킷 보호 키를
 유지할 수 있다.
 
-The draining state is entered once an endpoint receives a signal that its peer
-is closing or draining.  While otherwise identical to the closing state, an
-endpoint in the draining state MUST NOT send any packets.  Retaining packet
-protection keys is unnecessary once a connection is in the draining state.
+상대방이 종결이거나 마감이라는 신호를 받을 때, 엔드포인트는 마감 상태로
+들어간다. 종결 상태를 제외하고는, \["MUST NOT" 마감 상태의 엔드포인트는
+어떤 패킷도 보내면 안된다.\] 한 번 연결이 마감 연결 상태에 들어가면, 패킷
+보호 키를 보관할 필요가 없다.
 
-An endpoint MAY transition from the closing period to the draining period if it
-can confirm that its peer is also closing or draining.  Receiving a closing
-frame is sufficient confirmation, as is receiving a stateless reset.  The
-draining period SHOULD end when the closing period would have ended.  In other
-words, the endpoint can use the same end time, but cease retransmission of the
-closing packet.
+엔드포인트는 상대방 또한 종결 또는 마감 상태에 있는 것이 확신할 수 있다면
+종결 상태에서 마감 상태로 전환할 수도 있다. 무상태 재시작을 받을 때와
+마찬가지로 종결 프레임을 받는 걸로 충분한 확인이 된다. \["SHOULD" 마감
+기간은 종결 기간이 끝난 뒤에 끝나야 한다.\] 다시 말해, 엔드포인트는 종결
+기간의 종료 시각과 마감 기간의 종료 시각은 같을 수 있지만, 종결 패킷의
+재전송은 중잔될 수 있다.
 
-Disposing of connection state prior to the end of the closing or draining period
-could cause delayed or reordered packets to be handled poorly.  Endpoints that
-have some alternative means to ensure that late-arriving packets on the
-connection do not create QUIC state, such as those that are able to close the
-UDP socket, MAY use an abbreviated draining period which can allow for faster
-resource recovery.  Servers that retain an open socket for accepting new
-connections SHOULD NOT exit the closing or draining period early.
+종결 기간이나 마감 기간이 끝나기 전에 연결 상태를 삭제하면 (disposing)
+지연되거나 재정렬된 패킷이 제대로 처리되지 않을 수 있다. UDP 소켓을 닫을 수
+있는 패킷과 같이 해당 연결에 늦게 도착한 패킷이 QUIC 상태를 생성하지 않도록
+보장하는 \["MAY" 다른 방법을 가진 엔드포인트는 더 빠른 자원 복구를 허용하기
+위해 조기 (abbreviated) 마감 기간을 사용할 수도 있다.\] 새 연결을 수락할
+\["SHOULD NOT" 열린 소켓을 보유한 서버는 종결 기간이나 마감 기간을 일찍
+마쳐선 안된다.\]
 
-Once the closing or draining period has ended, an endpoint SHOULD discard all
-connection state.  This results in new packets on the connection being handled
-generically.  For instance, an endpoint MAY send a stateless reset in response
-to any further incoming packets.
+\["SHOULD" 종결 기간이나 마감 기간이 끝나면, 엔드포인트는 모든 연결 상태를
+폐기해야 한다.\] 그 결과로 해당 연결의 새로운 패킷이 일반적인 방식으로 처리되게
+한다다. \["MAY" 예를 들어, 엔드포인트는 앞으로 들어오는 모든 패킷에 대한
+응답으로 무상태 재시작을 보낼 수 있다.\]
 
-The draining and closing periods do not apply when a stateless reset
-({{stateless-reset}}) is sent.
+종결 및 마감 기간은 무상태 재시작 ({{stateless-reset}})이 보내질 때 적용하지
+않는다.
 
-An endpoint is not expected to handle key updates when it is closing or
-draining.  A key update might prevent the endpoint from moving from the closing
-state to draining, but it otherwise has no impact.
+엔드포인트는 종결 또는 마감 기간일 때 키 업데이트를 처리하길 기대되지 않는다.
+키 업데이트는 엔드포인트가 종결 상태에서 마감 상태로 변경되는 걸 방해할 수
+있지만, 이외에는 다른 영향은 없다.
 
-An endpoint could receive packets from a new source address, indicating a client
-connection migration ({{migration}}), while in the closing period. An endpoint
-in the closing state MUST strictly limit the number of packets it sends to this
-new address until the address is validated (see {{migrate-validate}}). A server
-in the closing state MAY instead choose to discard packets received from a new
-source address.
+엔드포인트는 종결 기간 중에 새로운 소스 주소로부터 온 패킷을 받을 수 있으며,
+이 수신은 클라이언트의 연결 이전을 ({{migration}}) 의미한다. \["MUST" 종결
+상태의 엔드포인트는 해당 수조가 입증될 때까지 ({{migrate-validate}}를 보라)
+이러한 새 주소로 보내는 패킷의 수를 엄격히 제한해야만 한다.\] \["MAY" 종결
+상태에 있는 서버는 새 소스 주소로부터 받은 패킷을, 그 수를 제한하는 대신,
+폐기할 수도 있다.\]
 
 
 ### Idle Timeout
