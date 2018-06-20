@@ -324,14 +324,15 @@ Version:
 
 DCIL and SCIL:
 
-: 옥텟 1은 이어지는 두 연결 ID 필드의 각 길이를 담고 있다. 두 길이는 4 비트의
-  unsigned 정수로 인코딩되어 있다. Destination Connection ID Length (DCIL)
-  필드는 옥텟 1의 상위 4비트를 점유하고 Source Connection ID Length (SCIL)
-  필드는 옥텟 1의 하위 4비트를 점유한다. 인코딩된 길이 값이 0이라는 것은 연결
-  ID가 길이로 0 옥텟임을 나타낸다. 0이 아닌 인코딩된 길이에 3을 더하면 연결
-  ID의 총 길이를 구할 수 있고, 이는 경계값을 포함해 4 옥텟에서 18옥텟 사이의
-  길이가 된다. 예를 들어 0x50이라는 필드값은, 8 옥텟의 Destination
-  Connection ID와 0 옥텟의 Source Connection ID가 이어질 것임을 나타낸다.
+: 버전 뒤에 이어지는 옥텟은 이어지는 두 연결 ID 필드의 길이를 담고 있다. 두
+  길이는 4 비트의 unsigned 정수로 인코딩되어 있다. Destination Connection ID
+  Length (DCIL) 필드는 해당 옥텟의 상위 4비트를 점유하고 Source Connection ID
+  Length (SCIL) 필드는 해당 옥텟의 하위 4비트를 점유한다. 인코딩된 길이 값이
+  0이라는 것은 연결 ID가 길이로 0 옥텟임을 나타낸다. 0이 아닌 인코딩된 길이에
+  3을 더하면 연결 ID의 총 길이를 구할 수 있고, 이는 경계값을 포함해 4 옥텟에서
+  18옥텟 사이의 길이가 된다. 예를 들어 0x50이라는 필드값은, 8 옥텟 길이의
+  Destination Connection ID와 0 옥텟 길이의 Source Connection ID가 이어질
+  것임을 나타낸다.
 
 Destination Connection ID:
 
@@ -712,19 +713,26 @@ Packet Number 필드는 패킷 보호가 적용된 뒤에 추가적인 기밀성
 송신측은 한 UDP 데이터그램에 (보통 암호학적 핸드셰이크 패킷과 보호된 패킷으로
 이루어진) 여러 QUIC 패킷을 통합할 수 있다. 핸드셰이크 및 그 이후 과정에서
 어플리케이션 데이터를 송신하는데 필요한 UDP 데이터그램의 수를 줄일 수 있다.
-짧은 헤더를 갖는 패킷은 Length 필드를 가지지 않으므로, 해당 패킷이 UDP
-데이터그램의 유일한 패킷이어야 한다.
 
-\["MUST NOT" 송신측은  다른 QUIC 연결에 속한 QUIC 패킷을 하나의 UDP
-데이터그램으로 통합해서는 안 된다.\]
-(역주: 따라서 QUIC 연결을 여러 개 만들어 Multipath를 구성할 경우, 통합을 통한
-메시지 수 줄이기가 불가능하다.)
+\["SHOULD" 송신측은 암호화 수준의 상승 순서 (초기화, 헨드셰이크, 0-RTT, 1-RTT)
+대로 패킷을 통합해야 한다.\] 이는 수신측이 한 번에 (in a single pass)에 모든
+패킷을 처리할 가능성을 높이기 때문이다. 짧은 헤더를 가진 패킷은 길이를 포함하고
+있지 않고, 따라서 UDP 데이터그램에 포함된 마지막 패킷이 될 것이다.
+
+\["MUST NOT" 송신측은 다른 Destination Connection ID를 가진 QUIC 패킷을 단일
+UDP 데이터그램에 통합하지 않는다.\] \["SHOULD" 수신측은 데이터그램의 첫 패킷과
+다른 Destination Connection ID를 가진 후속 패킷은 무시해야 한다.\]
 
 한 UDP 데이터그램에 통합된 모든 QUIC 패킷은 분리되어 (separate) 있으며
 완전하다. 비록 패킷 헤더에서 몇몇 필드 값이 중복될 수 있지만, 어떤 필드도
 생략되지 않는다. \["MUST" 통합된 QUIC 패킷의 수신측은 각 QUIC 패킷을 개별적으로
 처리해야만 하며\], 서로 다른 UDP 데이터그램의 페이로드로 수신된 것처럼 분리해서
-확인응답해야 한다.
+확인응답해야 한다. 만약 데이터그램의 하나 이상의 패킷이 (키가 아직 없는
+상황이라) 아직 처리될 수 없다면, 또는 (복호화 실패, 알 수 없는 타입 등으로
+인해) 처리에 실패하면, \["MUST" 수신측은 그럼에도 남은 패킷을 처리하려고
+시도해야만 한다.\] ["MAY" 넘어간 (skipped) 패킷들은 폐기되거나, 또는 후속
+처리를 위해 버퍼링될 수도 있는데\], 이는 패킷이 서로 다른 데이터그램에 담겨
+순서 없이 도착될 때와 비슷하다.
 
 
 ## 연결 ID {#connection-id}
@@ -906,6 +914,10 @@ QUIC의 긴/짧은 패킷 헤더에서, 패킷 번호를 나타내기 위해 필
 | 0x0f        | PATH_RESPONSE     | {{frame-path-response}}     |
 | 0x10 - 0x17 | STREAM            | {{frame-stream}}            |
 {: #frame-types title="Frame Types"}
+
+모든 QUIC 프레임은 멱등 (idempotent)이다. 즉, 유효한 프레임은 중복해서 받더라도
+의도되지 않은 부작용이나 에러를 야기하지 않는다.
+
 
 # 연결의 생애
 
@@ -1492,8 +1504,8 @@ TLS에서는 주소 입증 토큰이 종종 재개를 위한 비밀키 (resumpti
 TLS가 요구하는 정보와 묶일 수 있다. 이 경우, 무결성 보호를 추가하는 작업은
 암호학적 핸드셰이크 프로토콜로 위임될 수 있다. 만약 무결성 보호가 암호학적
 핸드셰이크로 위임된다면, 무결성 실패는 즉각적인 암호학적 핸드셰이크의 실패로
-귀결될 것이다. 무결성 보호가 QUIC에 의해 수행된다면, \["MUST" QUIC은 무결성
-체크가 PROTOCOL_VIOLATION 에러 코드와 함께 실패할 때 반드시 연결을 중단하여야만
+귀결될 것이다. 무결성 보호가 QUIC에 의해 수행되고, 무결성 체크가 실패하면,
+\["MUST" QUIC은 반드시 PROTOCOL_VIOLATION 에러 코드와 함께 연결을 중단하여야만
 한다.\]
 (역주: resumption secret의 적절한 역어를 찾아야 함.)
 
@@ -1816,13 +1828,19 @@ NEW_CONNECTION_ID 메시지가 필요하다.
 포트는 드물게 바뀌어야 한다.\]
 (역주: 번역 엉망. 역시 확인 필요)
 
-\["MUST" 이전에 사용되지 않은 연결 ID를 사용하여 성공적으로 인증된 패킷을
-수신하는 엔드포인트는 해당 주소로 보내는 모든 패킷에 대해 다음 사용 가능한 연결
-ID를 사용해야만 한다.\] 패킷이 순서대로 도착하지 않을 때, 연결 ID를 여러 번
-변경하지 않도록 하려면, 엔드포인트는 가장 큰 수신 패킷 번호를 증가시키는 패킷에
-만 응답하여 (연결 ID를) 변경해야 한다. 이렇게 하지 않으면 해당 연결 ID가 새
-경로에서의 활동내역과 연관짓는 것이 가능할 수 있다. 연결 ID를 변경하지 않고
-상대방의 주소가 변경되는 경우, 새 연결 ID로 이동할 필요가 없다.
+\["MUST" 엔드포인트가 기존에 사용되지 않은 연결 ID를 가진 패킷을 받아서,
+해당 패킷을 성공적으로 인증했다면, 엔드포인트는 해당 주소로 후속 패킷을 보낼
+때엔 새 연결 ID를 사용해야만 한다.\] 패킷이 순서대로 도착하지 않을 때, 연결
+ID를 여러 번 변경하지 않도록 하려면, 엔드포인트는 가장 큰 수신 패킷 번호를
+증가시키는 패킷에 만 응답하여 (연결 ID를) 변경해야 한다. 이렇게 하지 않으면
+해당 연결 ID가 새 경로에서의 활동내역과 연관짓는 것이 가능할 수 있다. 연결 ID를
+변경하지 않고 상대방의 주소가 변경되는 경우, 새 연결 ID로 이동할 필요가 없다.
+\["MUST NOT" 이용가능한 새 연결 ID가 없다면, 엔드포인트는 NEW_CONNECTION_ID
+프레임을 받을 때까지 후속 패킷을 절대로 보내서는 안 된다.\]
+
+\["SHOULD" 구현은 연결 ID를 바꿀 때, 상대방이 사용하지 않은 연결 ID 중 적어도
+하나를 이용가능함을 보장해야 한다.\] 구현은 이를 자신의 새 연결 ID 하에 보낸
+패킷에 언제나 1개 이상의 새 연결 ID를 제공함으로써 해결할 수 있다.
 
 
 ## 서버의 선호 주소 {#preferred-address}
@@ -3686,10 +3704,9 @@ Stream flow control, which prevents a single stream from consuming the entire
 receive buffer for a connection.
 
 A data receiver sends MAX_STREAM_DATA or MAX_DATA frames to the sender
-to advertise additional credit. MAX_STREAM_DATA frames send the the
-maximum absolute byte offset of a stream, while MAX_DATA sends the
-maximum sum of the absolute byte offsets of all streams other than
-stream 0.
+to advertise additional credit. MAX_STREAM_DATA frames send the maximum
+absolute byte offset of a stream, while MAX_DATA sends the maximum sum
+of the absolute byte offsets of all streams other than stream 0.
 
 A receiver MAY advertise a larger offset at any point by sending MAX_DATA or
 MAX_STREAM_DATA frames.  A receiver MUST NOT renege on an advertisement; that
