@@ -1915,7 +1915,7 @@ preferred_address 전송 파라미터에서 제공된 서버의 선호 주소에
 3 배만큼 지속되어야 한다.
 (역주: Draining은 마르게 하거나 배출하고 있는 상황이지만, 음식점에서 마감 시간
 을 두고 아직 다 먹지 않은 손님을 내보내지 않는 상황을 상상하며 '마감'이라는
-표현으로 번역함.)
+표현으로 번역함. 종결과 종료를 구분할 필요도 방법도 없으나 일단 구분하였음.)
 
 엔드포인트는 즉시 종료 ({{immediate-close}})가 시작된 후에 종결 기간에
 들어간다. 종결 기간 동안, \["MUST NOT" 엔드포인트는 CONNECTION_CLOSE
@@ -1969,75 +1969,66 @@ preferred_address 전송 파라미터에서 제공된 서버의 선호 주소에
 폐기할 수도 있다.\]
 
 
-### Idle Timeout
+### 휴지 타임아웃 {#idle-timeout}
 
-A connection that remains idle for longer than the idle timeout (see
-{{transport-parameter-definitions}}) is closed.  A connection enters the
-draining state when the idle timeout expires.
+휴지 타임아웃보다 오래 휴지한 연결 ({{transport-parameter-definitions}})은
+닫힌다. 휴지 타임아웃이 지났을 때 연결은 마감 상태에 들어간다.
 
-The time at which an idle timeout takes effect won't be perfectly synchronized
-on both endpoints.  An endpoint that sends packets near the end of an idle
-period could have those packets discarded if its peer enters the draining state
-before the packet is received.
+휴지 타임아웃가 적용되는 시각은 두 엔드포인트에서 완전히 동기화될 수 없다.
+휴지 기간 끝에 패킷을 보낸 엔드포인트는, 상대방이 패킷을 받기 전에 마감 상태에
+들어갔을 때에는, 해당 폐킷을 폐기시킬 수 있을 것이다.
 
 
-### Immediate Close
+### 즉시 종료 {#immediate-close}
 
-An endpoint sends a closing frame, either CONNECTION_CLOSE or APPLICATION_CLOSE,
-to terminate the connection immediately.  Either closing frame causes all
-streams to immediately become closed; open streams can be assumed to be
-implicitly reset.
+엔드포인트 연결을 즉시 중단하기 위하여 CONNECTION_CLOSE나 APPLICATION_CLOSE 중
+하나의 종결 프레임을 보낸다. 어떤 종결 프레임도 모든 스트림이 즉시 종료되도록
+야기한다; 열린 스트림은 암묵적으로 재시작될 것이라 가정될 수 있다.
 
-After sending a closing frame, endpoints immediately enter the closing state.
-During the closing period, an endpoint that sends a closing frame SHOULD respond
-to any packet that it receives with another packet containing a closing frame.
-To minimize the state that an endpoint maintains for a closing connection,
-endpoints MAY send the exact same packet.  However, endpoints SHOULD limit the
-number of packets they generate containing a closing frame.  For instance, an
-endpoint could progressively increase the number of packets that it receives
-before sending additional packets or increase the time between packets.
+종결 프레임을 보낸 뒤에, 엔드포인트는 즉시 종결 상태에 들어간다. 종결 기간동안,
+\["SHOULD" 종결 프레임을 보낸 엔드포인트는 종결 프레임을 다음 다른 패킷을 받은
+경우 응답해야 한다.\] 엔드포인트가 종결 연결을 유지하기 위한 상태를 최소하하기
+위해, \["MAY" 엔드포인트는 (앞에 보낸 것과) 정확히 같은 패킷을 보낼 수 있다.\]
+\["SHOULD" 하지만 엔드포인트는 종결 프레임을 담아 생성한 패킷의 수를 제한해야
+한다.\] 예를 들어, 엔드포인트는 점진적으로 추가 패킷을 보내기 전에 받는 패킷의
+수를 늘릴 수 있고, 또는 보내는 패킷과 패킷 간의 간격을 늘릴 수 있다.
 
-Note:
+주의:
 
-: Allowing retransmission of a packet contradicts other advice in this document
-  that recommends the creation of new packet numbers for every packet.  Sending
-  new packet numbers is primarily of advantage to loss recovery and congestion
-  control, which are not expected to be relevant for a closed connection.
-  Retransmitting the final packet requires less state.
+: 패킷의 재전송을 허용하는 것은 모든 패킷에 대해 새로운 패킷 번호 생성을 추천해
+  온 이 문서의 다른 조언과 배치된다. 새 패킷 번호를 보내는 것은 주로 손실
+  복구와 혼잡 제어에서 이득을 보기 위함이며, 종료 연결과는 관련지을 걸로 기대한
+  것이 아니다. 최종 패킷을 재전송하는 건 상태를 덜 요구한다.
 
-After receiving a closing frame, endpoints enter the draining state.  An
-endpoint that receives a closing frame MAY send a single packet containing a
-closing frame before entering the draining state, using a CONNECTION_CLOSE frame
-and a NO_ERROR code if appropriate.  An endpoint MUST NOT send further packets,
-which could result in a constant exchange of closing frames until the closing
-period on either peer ended.
+종결 프레임을 받은 뒤에, 엔드포인트는 마감 상태에 들어간다. \["MAY" 종결
+프레임을 받은 엔드포인트는 마감 상태에 들어가기 전에 종결 프레임을 담은 단일
+패킷을 보낼 수 있으며, 그 때 적절하다면 CONNECTION_CLOSE 프레임과 NO_ERROR
+코드를 사용한다.\] \["MUST NOT" 엔드포인트는 각 상대방의 종결 기간이 끝날
+때까지 종결 패킷의 지속적인 교환을 야기할 수 있는추가 패킷을 보내서는 절대 안
+된다.\]
 
-An immediate close can be used after an application protocol has arranged to
-close a connection.  This might be after the application protocols negotiates a
-graceful shutdown.  The application protocol exchanges whatever messages that
-are needed to cause both endpoints to agree to close the connection, after which
-the application requests that the connection be closed.  The application
-protocol can use an APPLICATION_CLOSE message with an appropriate error code to
-signal closure.
+즉시 종료는 응용 프로토콜이 연결을 닫도록 준비한 뒤에 사용할 수 있다. 이는 응용
+프로토콜이 정상 종료 (graceful shutdown) 협상한 후에 일어날 수 있다. 응용
+프로토콜은 두 엔드포인트가 연결을 종료하기로 동의하도록 하기 위해 필요한
+메시지들을 교환하고, 그런 후에 응용이 연결을 종료할 걸 요창한다. 응용
+프로토콜은 종료를 알리기 (signal) 위해 적절한 에러 코드와 함께
+APPLICATION_CLOSE 메시지를 사용할 수 있다.
 
 
-### Stateless Reset {#stateless-reset}
+### 무상태 재시작 {#stateless-reset}
 
-A stateless reset is provided as an option of last resort for an endpoint that
-does not have access to the state of a connection.  A crash or outage might
-result in peers continuing to send data to an endpoint that is unable to
-properly continue the connection.  An endpoint that wishes to communicate a
-fatal connection error MUST use a closing frame if it has sufficient state to do
-so.
+무상태 재시작은 연결 상태를 접근할 수 없는 엔드포인트에게 최후의 수단이다. 충돌
+또는 중단 (outage)으로 인해, 상대방이 연결을 적절히 지속할 수 없는 엔드포인트로
+데이터를 계속 보낼 수 있다. \["MUST" 치명적인 연결 오류를 전달하려는
+엔드포인트는 그러기 위한 충분한 상태가 있을 때 종결 프레임을 사용해야만 한다.\]
 
-To support this process, a token is sent by endpoints.  The token is carried in
-the NEW_CONNECTION_ID frame sent by either peer, and servers can specify the
-stateless_reset_token transport parameter during the handshake (clients cannot
-because their transport parameters don't have confidentiality protection).  This
-value is protected by encryption, so only client and server know this value.
+이 프로세스를 지원하기 위해, 각 엔드포인트에게 토큰이 보내진다. 해당 토큰은 각
+상대방이 보내온 NEW_CONNECTION_ID 프레임에 실려있으며, 서버는 핸드셰이크 동안
+stateless_reset_token 전송 파라미터를 명시할 수 있다. (클라이언트는 할 수
+없는데, 이는 클라이언트의 전송 파라미터의 기밀성 보호를 할 수 없기 때문이다.)
+이 값은 암호화되어 보호되며, 따라서 클라이언트와 서버만 이 값을 안다.
 
-An endpoint that receives packets that it cannot process sends a packet in the
-following layout:
+처리할 수 없는 패킷을 받은 엔드포인트는 다음 레이아웃을 가진 패킷을 보낸다:
 
 ~~~
  0                   1                   2                   3
@@ -2057,114 +2048,116 @@ following layout:
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ~~~
 
-This design ensures that a stateless reset packet is - to the extent possible -
-indistinguishable from a regular packet with a short header.
+이 설계는 무상태 재시작 패킷을 - 어느 정도 가능한 선에서 - 짧은 헤더를 가진
+정규 패킷과 구분할 수 없도록 만든다.
 
-The message consists of a header octet, followed by random octets of arbitrary
-length, followed by a Stateless Reset Token.
+메시지는 헤더 옥텟, 임의 길이의 랜덤 옥텟, 무상태 재시작 토큰 (Stateless Reset
+Token) 순으로 구성되어 있다.
 
-A stateless reset will be interpreted by a recipient as a packet with a short
-header.  For the packet to appear as valid, the Random Octets field needs to
-include at least 20 octets of random or unpredictable values.  This is intended
-to allow for a destination connection ID of the maximum length permitted, a
-packet number, and minimal payload.  The Stateless Reset Token corresponds to
-the minimum expansion of the packet protection AEAD.  More random octets might
-be necessary if the endpoint could have negotiated a packet protection scheme
-with a larger minimum AEAD expansion.
+무상태 재시작은 수신자에게 짧은 헤더의 패킷으로 해석될 것이다. 패킷이
+유효하도록 보이기 위해, Random Octets 필드는 최소 20 옥텟 이상의 랜덤 또는
+예측할 수 없는 값을 포함할 필요가 있다. 허용된 최대 길이를 갖는 Destination
+Connection ID, 패킷 번호, 최소 크기의 페이로드로 보이도록 의도된 것이다.
+무상태 재시작 토큰은 최소 크기의 패킷 보호 AEAD (authenticated encryption with
+associated data) 확장에 대응한다. 엔드포인트는 최소 AEAD 확장의 크기가 더 큰
+패킷 보호 방안 (scheme)을 협상수 있을 때엔 더 많은 랜덤 옥텟이 필요할 수 있다.
+(역주: 세 번째 문장은 의도성의 정도에 대해 검증할 필요가 있다. 구현을 살펴봐서
+무상태 재시작 패킷이 기존 Destination Connection ID, 패킷 번호, 최소 크기의
+페이로드를 가져와서 구현하고 있는지 아닌지 살펴볼 필요가 있다. 아마도 랜덤값을
+넣을 걸로 생각되지만... 덧붙여 무상태 재시작 토큰은 필드지만 번역하였다.)
 
-An endpoint SHOULD NOT send a stateless reset that is significantly larger than
-the packet it receives.  Endpoints MUST discard packets that are too small to be
-valid QUIC packets.  With the set of AEAD functions defined in {{QUIC-TLS}},
-packets less than 19 octets long are never valid.
+\["SHOULD NOT" 엔드포인트는 받은 패킷보다 상당히 큰 무상태 재시작을 보내선 안
+된다.\] \["MUST" 엔드포인트는 유효한 QUIC 패킷보다 훨씬 작은 패킷은 폐기해야만
+한다.\] {{QUIC-TLS}}에 정의된 AEAD 기능 집합을 사용하면, 19 옥텟보다 작은
+패킷은 절대 유효하지 않다.
 
-An endpoint cannot determine the Source Connection ID from a packet with a short
-header, therefore it cannot set the Destination Connection ID in the stateless
-reset packet.  The destination connection ID will therefore differ from the
-value used in previous packets.  A random Destination Connection ID makes the
-connection ID appear to be the result of moving to a new connection ID that was
-provided using a NEW_CONNECTION_ID frame ({{frame-new-connection-id}}).
+엔드포인트는 짧은 헤더를 가진 패킷으로부터 Source Connection ID를 결정할 수
+없고, 따라서 무상태 재시작 패킷의 Destination Connection ID를 설정할 수 없다.
+그러므로 Destination Connection ID는 기존 패킷에서 사용된 값과 달라야 한다.
+랜덤한 Destination Connection ID는 NEW_CONNECTION_ID 프레임
+({{frame-new-connection-id}})을 사용해 제공된 새로운 연결 ID로 이동한 결과처럼
+보이게 만든다.
 
-Using a randomized connection ID results in two problems:
+랜덤한 연결 ID의 사용은 두 문제를 야기한다:
 
-* The packet might not reach the peer.  If the Destination Connection ID is
-  critical for routing toward the peer, then this packet could be incorrectly
-  routed.  This causes the stateless reset to be ineffective in causing errors
-  to be quickly detected and recovered.  In this case, endpoints will need to
-  rely on other methods - such as timers - to detect that the connection has
-  failed.
+* 패킷이 상대방에게 도달하지 않을 수 있다. Destination Connection ID가
+  상대방으로 가는 라우팅에 중요할 경우, 패킷은 부적절하게 전달될 수 있다. 이는
+  무상태 재시작이 오류를 신속하게 탐지하고 복구하는데 효과적이지 않다. 이 경우,
+  엔드포인트는 다른 방법 - 예를 들어 타이머 - 을 통해 연결 실패를 탐지할 필요가
+  있을 것이다.
 
-* The randomly generated connection ID can be used by entities other than the
-  peer to identify this as a potential stateless reset.  An endpoint that
-  occasionally uses different connection IDs might introduce some uncertainty
-  about this.
+* 랜덤하게 생성된 연결 ID는 상대방이 아닌 다른 엔티티에 의해 사용될 수 있어서
+  이 연결 ID(를 포함한 패킷을) 잠재적인 무상태 재시작으로 식별할 수 있다.
+  때때로 다른 연결 ID를 사용하는 엔드포인트는 이에 관한 불확실성을 어느 정도
+  초래할 수 있다.
+  (역주: 번역이 적절치 않아 보임.)
 
-Finally, the last 16 octets of the packet are set to the value of the Stateless
-Reset Token.
+마지막으로, 패킷의 마지막 16 옥텟은 무상태 재시작 토큰의 값으로 설정된다.
 
-A stateless reset is not appropriate for signaling error conditions.  An
-endpoint that wishes to communicate a fatal connection error MUST use a
-CONNECTION_CLOSE or APPLICATION_CLOSE frame if it has sufficient state to do so.
+무상태 재시작은 에러 상태 (error condition)을 전달하기에 적절하지 않다.
+\["MUST" 치명적인 연결 오류를 전하려는 엔드포인트는 그래야할 충분한 상태가
+있다면 CONNECTION_CLOSE 또는 APPLICATION_CLOSE 프레임을 사용해야만 한다.\]
 
-This stateless reset design is specific to QUIC version 1.  An endpoint that
-supports multiple versions of QUIC needs to generate a stateless reset that will
-be accepted by peers that support any version that the endpoint might support
-(or might have supported prior to losing state).  Designers of new versions of
-QUIC need to be aware of this and either reuse this design, or use a portion of
-the packet other than the last 16 octets for carrying data.
-
-
-#### Detecting a Stateless Reset
-
-An endpoint detects a potential stateless reset when a packet with a short
-header either cannot be decrypted or is marked as a duplicate packet.  The
-endpoint then compares the last 16 octets of the packet with the Stateless Reset
-Token provided by its peer, either in a NEW_CONNECTION_ID frame or the server's
-transport parameters.  If these values are identical, the endpoint MUST enter
-the draining period and not send any further packets on this connection.  If the
-comparison fails, the packet can be discarded.
+이 무상태 재시작 디자인은 QUIC 버전 1에만 적용된다. 여러 버전의 QUIC을 지원하는
+엔드포인트는, 해당 엔드포인트가 지원하는 (또는 상태를 잃기 전에 지원하던)
+버전을 지원하는 상대방에 의해 수락될, 무상태 재시작을 생성할 필요가 있다. 새
+버전의  QUIC 설계자들은 이 점을 주의할 필요가 있으며, 이 설계를 재사용하거나
+데이터를 전송하기 위한 마지막 16 옥텟이 아닌 패킷의 특정 부분을 사용할 필요가
+있다.
 
 
-#### Calculating a Stateless Reset Token
+#### 무상태 재시작의 탐지
 
-The stateless reset token MUST be difficult to guess.  In order to create a
-Stateless Reset Token, an endpoint could randomly generate {{!RFC4086}} a secret
-for every connection that it creates.  However, this presents a coordination
-problem when there are multiple instances in a cluster or a storage problem for
-a endpoint that might lose state.  Stateless reset specifically exists to handle
-the case where state is lost, so this approach is suboptimal.
+엔드포인트는 짧은 헤더를 가진 패킷을 해독할 수 없거나, 짧은 헤더를 가진 패킷이
+중복 패킷으로 표시될 때 무상태 재시작을 탐지할 수 있다. 그러면 엔드포인트는
+상대방이 제공한 무상태 재시작 토큰을 패킷의 마지막 16 옥텟과 비교하는데, 그
+토큰은 NEW_CONNECTION_ID 프레임에 있었거나 서버의 전송 파라미터에 있었을
+것이다. \["MUST" 이 값들이 동일했다면, 엔드포인트는 반드시 마감 기간에
+들어가야만 하며, 이 연결에 대해 추가 패킷을 전송해서는 보내지 않는다.\] 비교가
+실패할 경우 해당 패킷은 폐기될 수 있다.
 
-A single static key can be used across all connections to the same endpoint by
-generating the proof using a second iteration of a preimage-resistant function
-that takes three inputs: the static key, the connection ID chosen by the
-endpoint (see {{connection-id}}), and an instance identifier.  An endpoint could
-use HMAC {{?RFC2104}} (for example, HMAC(static_key, instance_id ||
-connection_id)) or HKDF {{?RFC5869}} (for example, using the static key as input
-keying material, with instance and connection identifiers as salt).  The output
-of this function is truncated to 16 octets to produce the Stateless Reset Token
-for that connection.
 
-An endpoint that loses state can use the same method to generate a valid
-Stateless Reset Token.  The connection ID comes from the packet that the
-endpoint receives.  An instance that receives a packet for another instance
-might be able to recover the instance identifier using the connection ID.
-Alternatively, the instance identifier might be omitted from the calculation of
-the Stateless Reset Token so that all instances are equally able to generate a
-stateless reset.
+#### 무상태 재시작 토큰의 계산
 
-This design relies on the peer always sending a connection ID in its packets so
-that the endpoint can use the connection ID from a packet to reset the
-connection.  An endpoint that uses this design cannot allow its peers to send
-packets with a zero-length destination connection ID.
+\["MUST" 무상태 재시작 토큰은 추측하기 어려워야만 한다.\] 무상태 재시작 토큰을
+만들이 위해서, 엔드포인트는 생성한 모든 연결에 대해 비밀키 (secret)를 랜덤하게
+생성할 수 있다 {{!RFC4086}}. 하지만 클러스터 내에 여러 인스턴스가 있을 때 중재
+문제 (coordination problem)나, 상태를 잃을 수 있는 엔드포인트에서의 저장소 문제
+(storage problem)를 야기한다. 무상태 재시작은 상태가 손실되었을 때를 처리하기
+위해 명시적으로 존재하므로, 이 방법이 최선은 아니다.
 
-Revealing the Stateless Reset Token allows any entity to terminate the
-connection, so a value can only be used once.  This method for choosing the
-Stateless Reset Token means that the combination of instance, connection ID, and
-static key cannot occur for another connection.  A connection ID from a
-connection that is reset by revealing the Stateless Reset Token cannot be reused
-for new connections at the same instance without first changing to use a
-different static key or instance identifier.
+단일 정적 키는, 해당 정적키, 엔드포인트가 고른 연결 ID ({{connection-id}}를
+보라), 인스턴스 구분자 (instance identifier)라는 세 입력을 받는 역상 저항성
+(preimage-resistant) (역주: 암호화 해시) 함수를 두 번 반복하여 증명을
+생성함으로써, 동일한 엔드포인트를 향하는 모든 연결에 걸쳐 사용될 수 있다.
+엔드포인트는 HMAC {{?RFC2104}} (예를 들어, HMAC(static_key, instance_id ||
+connection_id)) 또는 HKDF {{?RFC5869}} (예를 들어, 정적 키를 입력 키 재료로,
+인스턴스 구분자와 연결 ID를 솔트 (salt)로 쓸 수 있음)를 사용할 수 있다. 이
+함수의 결과는 해당 연결의 무상태 재시작 토큰을 생성하기 위해 16 옥텟으로
+단절 (truncate)된다.
+(역주: 단절의 위치가 애매한데, 상위 16 옥텟을 자르는 것으로 보인다.
+https://www.iacr.org/conferences/asiacrypt2005/rump/Ramzan_AC05_Rump.pdf
+에서는 해시 함수 결과를 단절할 경우의 문제를 다룬다. 연구 주제가 될 수 있을
+듯.)
 
-Note that Stateless Reset messages do not have any cryptographic protection.
+상태를 손실한 엔드포인트는 유효한 무상태 재시작 토큰을 생성하기 위해 동일한
+방법을 사용할 수 있다. 연결 ID는 엔드포인트가 받은 패킷에서 얻을 수 있다. 다른
+인스턴스에 대한 패킷을 받은 인스턴스는 해당 연결을 사용한 인스턴스 구분자를
+복구할 수도 있을 것이다. 대안으로, 모든 인스턴스가 동등하게 무상태 재시작을
+생성할 수 있도록 무상태 재시작 토큰의 계산을 생략할 수도 있을 것이다.
+
+이러한 설계는 패킷을 통해 연결 ID를 매 번 보내는 상대방에 달려있으며, 이를 통해
+엔드포인트는 패킷에서 받은 연결 ID를 연결 재시작을 위해 사용할 수 있다. 이러한
+설계를 사용하는 엔드포인트는 상대방이 길이가 0인 Destination Connection ID를
+담은 패킷을 보내는 것을 허용할 수 없다.
+
+무상태 재시작 토큰을 노출하면 임의의 엔티티가 연결을 종료하게 만들 수 있으므로,
+해당 값은 한 번만 사용될 수 있다. 무상태 재시작 토큰의 선택 방법은 인스턴스,
+연결 ID, 정적 키가 다른 연결에서 발생할 수 없다는 점에서 의미를 가지는 것이다.
+무상태 재시작 토큰이 노출되어 재시작된 연결의 연결 ID는 정적 키나 인스턴스
+구분자를 교체하지 않고는 같은 인스턴스에서의 새 연결에 사용될 수 없다.
+
+무상태 재시작 메시지는 암호학적 보호를 받지 않음에 주의하라.
 
 
 # Frame Types and Formats
