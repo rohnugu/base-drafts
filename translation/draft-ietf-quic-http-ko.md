@@ -1176,23 +1176,24 @@ GOAWAY 프레임의 스트림 ID보다 낮은 스트림 ID를 통한 요청은 �
 그런데도 서버가 어떤 스트림이 처리 중인지를 알려주는 GOAWAY 프레임을 보내주지
 않는다면, 클라이언트는 서버가 POST 요청을 처리하기 시작했는지를 알 수 없다.
 
-A client that is unable to retry requests loses all requests that are in flight
-when the server closes the connection.  A server MAY send multiple GOAWAY frames
-indicating different stream IDs, but MUST NOT increase the value they send in
-the last Stream ID, since clients might already have retried unprocessed
-requests on another connection.  A server that is attempting to gracefully shut
-down a connection SHOULD send an initial GOAWAY frame with the last Stream ID
-set to the current value of QUIC's MAX_STREAM_ID and SHOULD NOT increase the
-MAX_STREAM_ID thereafter.  This signals to the client that a shutdown is
-imminent and that initiating further requests is prohibited.  After allowing
-time for any in-flight requests (at least one round-trip time), the server MAY
-send another GOAWAY frame with an updated last Stream ID.  This ensures that a
-connection can be cleanly shut down without losing requests.
+서버가 연결을 닫을 때, 요청을 재시도할 수 없는 클라이언트는  전달 중인 (in
+flight) 모든 요청을 잃어버리게 된다. \["MAY" 서버는 다른 스트림 ID를 갖는
+여러 개의 GOAWAY 프레임을 전달할 수 있다.\] 하지만 \["MUST NOT" 서버는
+마지막 스트림 ID로 보낸 값을 증가시켜서는 절대 안 된다.\] 왜냐면 클라이언트는
+다른 연결에서 처리되지 않은 요청을 이미 재전송하고 있을 수 있기 때문이다.
+\["SHOULD" 연결을 정상적으로 (gracefully) 종료하고자 하는 서버는,
+QUIC의 MAX_STREAM_ID의 현재 값으로 설정된 '마지막 스트림 ID'를 가진 첫 GOAWAY
+프레임을 송신해야 한다.\] 또한 \["SHOULD NOT" 서버는 MAX_STREAM_ID를 그 이후에
+증가시켜선 안 된다.\] 이는 클라이언트에게 연결 종료가 임박했음을 알리고, 추가
+요청을 시작하는 것은 금지되었음을 알린다. 혹시 있을 전달 중인 (in-flight)
+요청을 위한 시간 (적어도 1 RTT)을 준 뒤에, \["MAY" 서버는 앞에서 갱신되었던
+마지막 스트림 ID를 가진 GOAWAY 프레임을 새로 보낼 수도 있다.\] 이는 연결이
+요청을 잃는 일 없이 깔끔하게 종료하도록 보장한다.
 
-Once all accepted requests have been processed, the server can permit the
-connection to become idle, or MAY initiate an immediate closure of the
-connection.  An endpoint that completes a graceful shutdown SHOULD use the
-HTTP_NO_ERROR code when closing the connection.
+모든 승인된 요청이 처리되면, 서버는 해당 연결을 휴지 연결이 되도록 허용할
+수 있으며, 또는 \["MAY" 해당 연결의 즉시 폐쇄를 시작할 수도 있다.\] \["SHOULD"
+정상적인 종료를 완료한 엔드포인트는 연결을 닫을 때 HTTP_NO_ERROR 코드를
+사용해야 한다.\]
 
 ## Immediate Application Closure
 
