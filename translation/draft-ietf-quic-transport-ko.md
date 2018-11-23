@@ -211,7 +211,7 @@ x (A/B/C) ...
 : 는 x의 길이가 비트 단위로 A, B, C 중 하나임을 나타낸다.
 
 x (i) ...
-: 는 x가 {{integer-encoding}}에 명시된 가변-길이 인코딩을 사용함을 나타낸다.
+: 는 x가 {{integer-encoding}}에 명시된 가변 길이 인코딩을 사용함을 나타낸다.
 
 x (*) ...
 : 는 x가 가변 길이임을 나타낸다.
@@ -2178,26 +2178,24 @@ https://www.iacr.org/conferences/asiacrypt2005/rump/Ramzan_AC05_Rump.pdf
 무상태 재시작 메시지는 암호학적 보호를 받지 않음에 주의하라.
 
 
-# Frame Types and Formats
+# 프레임 타입 및 포맷
 
-As described in {{frames}}, packets contain one or more frames. This section
-describes the format and semantics of the core QUIC frame types.
+{{frames}}에서 설명되었듯, 패킷은 하나 이상의 프레임을 담고 있다. 이 절은
+핵심적인 QUIC 프레임 타입의 포맷과 시맨틱을 설명한다.
 
 
-## Variable-Length Integer Encoding {#integer-encoding}
+## 가변 길이 정수 인코딩 {#integer-encoding}
 
-QUIC frames commonly use a variable-length encoding for non-negative integer
-values.  This encoding ensures that smaller integer values need fewer octets to
-encode.
+QUIC 프레임은 비음 (non-negative) 정수값에 가변 길이 인코딩을 공통적으로
+사용한다. 이 인코딩은 작은 정수값을 인코딩한 결과가 작은 옥텟을 필요로 하도록
+한다.
 
-The QUIC variable-length integer encoding reserves the two most significant bits
-of the first octet to encode the base 2 logarithm of the integer encoding length
-in octets.  The integer value is encoded on the remaining bits, in network byte
-order.
+QUIC의 가변 길이 정수 인코딩은 첫 번째 옥텟 최상위 두 비트를 옥텟 단위의 정수
+인코딩 길이에 밑이 2인 로그를 취한 값을 인코딩하기 위해 점유한다. 남은 비트에
+정수값이 네트워크 바이트 순서로 인코딩된다.
 
-This means that integers are encoded on 1, 2, 4, or 8 octets and can encode 6,
-14, 30, or 62 bit values respectively.  {{integer-summary}} summarizes the
-encoding properties.
+이는 정수가 각각 1, 2, 4, 8 옥텟 길이로 인코딩되며 6, 14, 30, 62 비트로 값을
+인코딩함을 의미한다. {{integer-summary}}는 인코딩 성질을 요약한 것이다.
 
 | 2Bit | Length | Usable Bits | Range                 |
 |:-----|:-------|:------------|:----------------------|
@@ -2207,13 +2205,12 @@ encoding properties.
 | 11   | 8      | 62          | 0-4611686018427387903 |
 {: #integer-summary title="Summary of Integer Encodings"}
 
-For example, the eight octet sequence c2 19 7c 5e ff 14 e8 8c (in hexadecimal)
-decodes to the decimal value 151288809941952652; the four octet sequence 9d 7f
-3e 7d decodes to 494878333; the two octet sequence 7b bd decodes to 15293; and
-the single octet 25 decodes to 37 (as does the two octet sequence 40 25).
+예를 들어 (16진수 표기법로 표현된) 8 옥텟 열 c2 19 7c 5e ff 14 e8 8c는
+십진수 값 151288809941952652으로 디코딩된다; 4 옥텟 열 9d 7f 3e 7d는
+494878333으로 디코딩된다; 2 옥텟 열 7b bd는 15293으로 디코딩된다; 1 옥텟 25는
+37로 디코딩된다 (2 옥텟열 40 25도 37로 디코딩된다).
 
-Error codes ({{error-codes}}) are described using integers, but do not use this
-encoding.
+에러 코드 ({{error-codes}})는 정수를 사용해 표기되나, 이 인코딩을 쓰진 않는다.
 
 
 ## PADDING Frame {#frame-padding}
