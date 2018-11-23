@@ -1226,12 +1226,12 @@ HTTP/3은 프로토콜 확장을 허용한다. 이 절에서 설명된 한계점
 (method), 상태 코드, 헤더 필드 등을 새로이 정의하는 HTTP의 확장은 기존 옵션에
 영향을 끼치지 않는다.
 
-Extensions are permitted to use new frame types ({{frames}}), new settings
-({{settings-parameters}}), new error codes ({{errors}}), or new unidirectional
-stream types ({{unidirectional-streams}}).  Registries are established for
-managing these extension points: frame types ({{iana-frames}}), settings
-({{iana-settings}}), error codes ({{iana-error-codes}}), and stream types
-({{iana-stream-types}}).
+확장은 새 프레임 타입 ({{frames}}), 새 설정 ({{settings-parameters}}), 새 에러
+코드 ({{errors}}), 또는 새 단방향 스트림 타입 ({{unidirectional-streams}})을
+사용하는 것이 허용된다. 레지스트리 (registries)는 프레임 타입
+({{iana-frames}}), 설정 ({{iana-settings}}), 에러 코드 ({{iana-error-codes}}),
+스트림 타입 ({{iana-stream-types}})이라는 확장 지점 (extension point)을
+설립한다.
 
 Implementations MUST ignore unknown or unsupported values in all extensible
 protocol elements.  Implementations MUST discard frames and unidirectional
