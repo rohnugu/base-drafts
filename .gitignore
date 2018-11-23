@@ -12,3 +12,6 @@ pulls.json
 lib
 .targets.mk
 *.upload
+draft-ietf-quic-http-ko.md
+draft-ietf-quic-transport-ko.md
+draft-ietf-quic-transport-ko.md

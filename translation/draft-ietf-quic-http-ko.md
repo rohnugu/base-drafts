@@ -1110,28 +1110,28 @@ also be used (e.g., HTTP_PUSH_REFUSED, HTTP_PUSH_ALREADY_IN_CACHE; see
 {{errors}}). This asks the server not to transfer additional data and indicates
 that it will be discarded upon receipt.
 
-# Connection Closure
+# 연결 종료 (Connection Closure)
 
-Once established, an HTTP/3 connection can be used for many requests and
-responses over time until the connection is closed.  Connection closure can
-happen in any of several different ways.
+연결이 한 번 설립되면, HTTP/3 연결은 연결이 종료될 때까지 여러 요청과 응답
+과정에 사용될 수 있다. 연결 종료는 여러 가지 경우에 발생할 수 있다.
 
-## Idle Connections
+## 휴지 연결 (Idle Connections)
 
-Each QUIC endpoint declares an idle timeout during the handshake.  If the
-connection remains idle (no packets received) for longer than this duration, the
-peer will assume that the connection has been closed.  HTTP/3 implementations
-will need to open a new connection for new requests if the existing connection
-has been idle for longer than the server's advertised idle timeout, and SHOULD
-do so if approaching the idle timeout.
+각 QUIC 엔드포인트는 핸드셰이크 과정에서 휴지 타임아웃을 선언한다. 해당
+연결이 (상대방이 선언한) 타임아웃보다 더 긴 시간 휴지 상태 (어떤 패킷도
+도착하지 않음)이면 상대방은 해당 연결이 종료된 것으로 간주한다. 만약 기존
+연결이 서버가 고지한 (advertised) 휴지 타임아웃보다 긴 시간 동안 휴지 상태이면
+HTTP/3 구현은 새 요청에 대해 새 연결을 열 필요가 있으며, \["SHOULD" 특히 휴지
+타임아웃에 가까워지면 그런 동작을 해야 한다.\]
 
-HTTP clients are expected to use QUIC PING frames to keep connections open while
-there are responses outstanding for requests or server pushes. If the client is
-not expecting a response from the server, allowing an idle connection to time
-out is preferred over expending effort maintaining a connection that might not
-be needed.  A gateway MAY use PING to maintain connections in anticipation of
-need rather than incur the latency cost of connection establishment to servers.
-Servers SHOULD NOT use PING frames to keep a connection open.
+HTTP 클라이언트는 요청이나 서버 푸시에 대한 응답이 있는 동안에는 연결을
+유지하기 위해 QUIC PING 프레임을 사용할 것이 기대되어진다. 만약 클라이언트가
+서버로부터 응답을 기대하지 않는다면, 휴지 연결을 타임아웃하는 것이 필요없을
+수 있는 연결을 유지하려는 노력을 더 하는 것에 비해서는 낫다. \["MAY"
+게이트웨이라면 필요할 것이라 에상되는 연결에 대해, 서버로의 연결 설립에 드는
+지연 비용을 야기할 바에는, 연결을 유지하고자 PING을 사용할 수도 있다.\]
+\["SHOULD" 서버는 연결을 열린 상태로 유지하고자 PING 프레임을 사용하면 안
+된다.\]
 
 ## Connection Shutdown
 
