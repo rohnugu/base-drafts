@@ -1209,7 +1209,7 @@ CONNECTION_CLOSE 프레임을 보내게 된다. 상대는 이 프레임의 에�
 ## 전송에 의한 폐쇄 (Transport Closure)
 
 다양한 이유로, QUIC 전송은 응용 계층에게 연결이 중단되었음을 (terminated) 알릴
-수 있다. 상대가 명시적으로 닫거나, 전송 계층에서의 에러가 발생했거나, 연결성을
+수 있다. 상대가 명시적으로 닫거나, 전송 계층에서의 오류가 발생했거나, 연결성을
 방해하는 네트워크 토폴로지의 변화 등이 이유일 수 있다.
 
 연결이 GOAWAY 프레임 없이 중단되면, \["MUST" 클라이언트는 이미 보내진 요청은,
@@ -1253,113 +1253,106 @@ HTTP/3은 프로토콜 확장을 허용한다. 이 절에서 설명된 한계점
 한다.\]
 
 
-# Error Handling {#errors}
+# 에러 처리 (Error Handling) {#errors}
 
-QUIC allows the application to abruptly terminate (reset) individual streams or
-the entire connection when an error is encountered.  These are referred to as
-"stream errors" or "connection errors" and are described in more detail in
-{{QUIC-TRANSPORT}}.  An endpoint MAY choose to treat a stream error as a
-connection error.
+QUIC은 응용이 에러에 직면했을 때 갑자기 개별 스트림이나 전체 연결을 중단
+(리셋)하는 것을 허용한다. 이를 각각 "스트림 오류"와 "연결 오류"라고 하며,
+{{QUIC-TRANSPORT}}에서 상세히 설명한다. \["MAY" 엔드포인트는 스트림 오류를 연결
+오류처럼 다룰 수도 있다.
 
-This section describes HTTP/3-specific error codes which can be used to express
-the cause of a connection or stream error.
+이 절은 연결 오류나 스트림 오류의 원인을 설명하기 위해 사용가능한 HTTP/3을 위한
+에러 코드를 설명한다.
 
-## HTTP/3 Error Codes {#http-error-codes}
+## HTTP/3 에러 코드 (HTTP/3 Error Codes) {#http-error-codes}
 
-The following error codes are defined for use in QUIC RESET_STREAM frames,
-STOP_SENDING frames, and CONNECTION_CLOSE frames when using HTTP/3.
+다음 에러 코드는 HTTP/3을 사용할 때 QUIC의 RESET_STREAM 프레임, STOP_SENDING
+프레임, CONNECTION_CLOSE 프레임에 사용되도록 정의된 것이다.
 
 HTTP_NO_ERROR (0x00):
-: No error.  This is used when the connection or stream needs to be closed, but
-  there is no error to signal.
+: 오류 없음. 연결이나 스트림이 닫힐 필요가 있지만, 오류가 없음을 알릴 때
+  사용함.
 
 HTTP_PUSH_REFUSED (0x02):
-: The server has attempted to push content which the client will not accept
-  on this connection.
+: 클라이언트가 해당 연결에서 수용하지 않는 컨첸츠를 서버가 푸시하려고 했음.
 
 HTTP_INTERNAL_ERROR (0x03):
-: An internal error has occurred in the HTTP stack.
+: HTTP 스택에서 내부 오류가 발생함.
 
 HTTP_PUSH_ALREADY_IN_CACHE (0x04):
-: The server has attempted to push content which the client has cached.
+: 서버가 클라이언트가 캐시해둔 컨텐츠를 푸시하려고 했음.
 
 HTTP_REQUEST_CANCELLED (0x05):
-: The client no longer needs the requested data.
+: 클라이언트가 요청된 데이터를 더 이상 필요로 하지 않음.
 
 HTTP_INCOMPLETE_REQUEST (0x06):
-: The client's stream terminated without containing a fully-formed request.
+: 클라이언트의 스트림이 제대로 갖춰진 (fully-formed) 요청 없이 중단됨.
 
 HTTP_CONNECT_ERROR (0x07):
-: The connection established in response to a CONNECT request was reset or
-  abnormally closed.
+: CONNECT 요청의 응답으로 설립된 연결이 리셋되거나 비정상적으로 닫힘.
 
 HTTP_EXCESSIVE_LOAD (0x08):
-: The endpoint detected that its peer is exhibiting a behavior that might be
-  generating excessive load.
+: 엔드포인트가 상대방이 과도한 로드를 생성할 수 있는 행위를 하려고 함을 감지함.
 
 HTTP_VERSION_FALLBACK (0x09):
-: The requested operation cannot be served over HTTP/3.  The
-  peer should retry over HTTP/1.1.
+: 요청된 오퍼레이션이 HTTP/3에서 행할 (served) 수 없음. 상대방은 HTTP/1.1을
+  통해 재전송해야 함.
 
 HTTP_WRONG_STREAM (0x0A):
-: A frame was received on a stream where it is not permitted.
+: 프레임이 허용되지 않은 스트림을 통해 받아짐.
 
 HTTP_PUSH_LIMIT_EXCEEDED (0x0B):
-: A Push ID greater than the current maximum Push ID was referenced.
+: 현재 최대 푸시 ID보다 큰 푸시 ID가 참조됨.
 
 HTTP_DUPLICATE_PUSH (0x0C):
-: A Push ID was referenced in two different stream headers.
+: 한 푸시 ID가 서로 다른 두 스트림 헤더에서 참조됨.
 
 HTTP_UNKNOWN_STREAM_TYPE (0x0D):
-: A unidirectional stream header contained an unknown stream type.
+: 단방향 스트림 헤더가 알 수 없는 스트림 타입을 가짐.
 
 HTTP_WRONG_STREAM_COUNT (0x0E):
-: A unidirectional stream type was used more times than is permitted by that
-  type.
+: 단방향 스트림 타입이 해당 타입에 허용된 횟수 이상으로 사용됨.
 
 HTTP_CLOSED_CRITICAL_STREAM (0x0F):
-: A stream required by the connection was closed or reset.
+: 해당 연결에서 필수적인 스트림이 닫혔거나 리셋됨.
 
 HTTP_WRONG_STREAM_DIRECTION (0x0010):
-: A unidirectional stream type was used by a peer which is not permitted to do
-  so.
+: 상대방이 허용되지 않는 단방향 스트림 타입을 사용했음.
 
 HTTP_EARLY_RESPONSE (0x0011):
-: The remainder of the client's request is not needed to produce a response.
-  For use in STOP_SENDING only.
+: 응답을 생성하는데 클라이언트의 요청의 나머지 부분이 필요하지 않음.
+  STOP_SENDING에서만 사용함.
 
 HTTP_MISSING_SETTINGS (0x0012):
-: No SETTINGS frame was received at the beginning of the control stream.
+: 제어 스트림이 시작 시점에 SETTING 프레임을 전혀 받지 못함.
 
 HTTP_UNEXPECTED_FRAME (0x0013):
-: A frame was received which was not permitted in the current state.
+: 현재 상태에서 허용되지 않는 프레임을 받음.
 
 HTTP_GENERAL_PROTOCOL_ERROR (0x00FF):
-: Peer violated protocol requirements in a way which doesn't match a more
-  specific error code, or endpoint declines to use the more specific error code.
+: 상대방이 특정 에러 코드와 매치되지는 않는 프로토콜 요구사항을 위반했거나,
+  (에러가 발생했지만) 엔드포인트가 더 구체적인 에러 코드를 사용하기를 거부함.
 
 HTTP_MALFORMED_FRAME (0x01XX):
-: An error in a specific frame type.  The frame type is included as the last
-  byte of the error code.  For example, an error in a MAX_PUSH_ID frame would be
-  indicated with the code (0x10D).
+: 특정 프레임 타입에서의 오류. 에러 코드의 마지막 바이트로 프레임 타입이
+  명기됨. 예를 들어, MAX_PUSH_ID 프레임에서의 에러는 이 같은 코드 (0x10D)로
+  알려질 것임.
 
 
-# Security Considerations
+# 보안 고려 사항 (Security Considerations)
 
-The security considerations of HTTP/3 should be comparable to those of HTTP/2
-with TLS.  Note that where HTTP/2 employs PADDING frames and Padding fields in
-other frames to make a connection more resistant to traffic analysis, HTTP/3 can
-rely on QUIC PADDING frames or employ the reserved frame and stream types
-discussed in {{frame-grease}} and {{stream-grease}}.
+HTTP/3의 보안 고려 사항은 TLS를 같이 쓰는 HTTP/2의 보안 고려사항과 비교되어야
+한다. HTTP/2가 연결이 트래픽 분석에 대항하도록 PADDING 프레임 및 다른 프레임의
+Padding 필드를 활용할 때, HTTP/3은 QUIC의 PADDING 프레임에 의존하거나
+{{frame-grease}}와 {{stream-grease}}에 논의된 예약된 프레임과 스트림 타입을
+활용할 수 있다.
 
-When HTTP Alternative Services is used for discovery for HTTP/3 endpoints, the
-security considerations of {{!ALTSVC}} also apply.
+HTTP 대체 서비스 (HTTP Alternative Services)가 HTTP/3 엔드포인트를 찾기 위한
+용도로 쓰일 때, {{!ALTSVC}}의 보안 고려 사항 또한 고려한다.
 
-Several protocol elements contain nested length elements, typically in the form
-of frames with an explicit length containing variable-length integers.  This
-could pose a security risk to an incautious implementer.  An implementation MUST
-ensure that the length of a frame exactly matches the length of the fields it
-contains.
+몇몇 프로토콜 요소는 중첩된 길이 요소를 포함하는데, 보통 가변 길이 정수로
+표현된 (containing) 명시적 길이와 같이 프레임의 형태로 되어 있다. 이는 부주의한
+구현가에게 보안 위협을 초래할 수 있다. \["MUST" 구현은 반드시 담고 있는
+필드들의 길이와 프레임의 길이가 정확히 맞아떨어지도록  보장해야만 한다.\]
 
 
 # IANA Considerations
