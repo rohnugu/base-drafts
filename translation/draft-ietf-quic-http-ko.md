@@ -1147,33 +1147,34 @@ HTTP 클라이언트는 요청이나 서버 푸시에 대한 응답이 있는 �
 (client-initiated requests)이 이미 처리되었거나 처리될 수 있음을 알려준다. 반면
 이를 알려준 스트림 ID와 그 이후의 스트림 ID는 수용되지 않는다 (not accepted).
 이는 클라이언트와 서버가 연결 종료 전에 어떤 요청을 수용할지에 대해 확인할 수
-있게 한다. \["MAY" 이 식별자는 QUIC의 MAX_STREAM_ID 프레임에서 확인된 스트림
-한계 (stream limit)보다는 작을 수 있다.\] 또한 \["MAY" 이 식별자는 요청이
+있게 한다. \["MAY" 이 스트림 ID는 QUIC의 MAX_STREAM_ID 프레임에서 확인된 스트림
+한계 (stream limit)보다는 작을 수 있다.\] 또한 \["MAY" 이 스트림 ID는 요청이
 처리된 적 없었다면 0일 수 있다. \] \["SHOULD NOT" 서버는 GOAWAY 프레임을
 보낸 뒤에 QUIC의 MAX_STREAM_ID 한계를 증가시켜서는 안 된다.\]
 
-Once sent, the server MUST cancel requests sent on streams with an identifier
-higher than the indicated last Stream ID.  Clients MUST NOT send new requests on
-the connection after receiving GOAWAY, although requests might already be in
-transit. A new connection can be established for new requests.
+GOAWAY 프레임이 보내지면, \["MUST" 서버는 확인된 최신 스트림 ID보다 높은 ID를
+가진 스트림으로 보내진 요청을 취소해야만 한다.\] \["MUST NOT" 클라이언트는
+GOAWAY 프레임을 받은 뒤 해당 연결에 새 요청을 절대 보내서는 안 된다.\] 다만
+이미 전달 과정에 있는 요청이 있을 수는 있다. 새 연결은 새 요청으로 설립될 수
+있다.
 
-If the client has sent requests on streams with a higher Stream ID than
-indicated in the GOAWAY frame, those requests are considered cancelled
-({{request-cancellation}}).  Clients SHOULD reset any streams above this ID with
-the error code HTTP_REQUEST_CANCELLED.  Servers MAY also cancel requests on
-streams below the indicated ID if these requests were not processed.
+클라이언트가 GOAWAY 프레임에서 확인된 스트림 ID보다 더 높은 ID를 가진
+스트림으로 요청을 보냈다면, 해당 요청은 취소({{request-cancellation}})된 것으로
+간주된다. \["SHOULD" 클라이언트는 에러 코드 HTTP_REQUEST_CANCELLED와 함께 해당
+스트림 ID로 보낸 모든 스트림을 리셋해야 한다.\] \["MAY" 서버는 확인된 스트림
+ID보다 낮은 스트림 ID를 갖는 스트림도, 해당 요청이 처리되지 않았다면 취소할
+수도 있다 .\]
 
-Requests on Stream IDs less than the Stream ID in the GOAWAY frame might have
-been processed; their status cannot be known until they are completed
-successfully, reset individually, or the connection terminates.
+GOAWAY 프레임의 스트림 ID보다 낮은 스트림 ID를 통한 요청은 처리될 수도 있다.
+해당 요청이 성공적으로 완료되었거나, 개별적으로 리셋되었거나, 또는 연결이
+중단되기 전까지는, 처리 여부에 관한 상태를 (클라이언트가) 알 수 없다.
 
-Servers SHOULD send a GOAWAY frame when the closing of a connection is known
-in advance, even if the advance notice is small, so that the remote peer can
-know whether a stream has been partially processed or not.  For example, if an
-HTTP client sends a POST at the same time that a server closes a QUIC
-connection, the client cannot know if the server started to process that POST
-request if the server does not send a GOAWAY frame to indicate what streams it
-might have acted on.
+연결이 닫힐 것을 미리 알고 있다면, 설령 곧바로 연결이 닫히더라도 \["SHOULD"
+서버는 GOAWAY 프레임을 보내야 한다.\] 이를 통해 원격 상대방이 특정 스트림이
+부분적으로 처리가 된 것인지 아닌지를 알 수 있게 된다. 예를 들어, HTTP
+클라이언트가 POST 메시지를 보내고 동시에 서버가 서버가 QUIC 연결을 닫는다면,
+그런데도 서버가 어떤 스트림이 처리 중인지를 알려주는 GOAWAY 프레임을 보내주지
+않는다면, 클라이언트는 서버가 POST 요청을 처리하기 시작했는지를 알 수 없다.
 
 A client that is unable to retry requests loses all requests that are in flight
 when the server closes the connection.  A server MAY send multiple GOAWAY frames
