@@ -1230,27 +1230,27 @@ HTTP/3은 프로토콜 확장을 허용한다. 이 절에서 설명된 한계점
 코드 ({{errors}}), 또는 새 단방향 스트림 타입 ({{unidirectional-streams}})을
 사용하는 것이 허용된다. 레지스트리 (registries)는 프레임 타입
 ({{iana-frames}}), 설정 ({{iana-settings}}), 에러 코드 ({{iana-error-codes}}),
-스트림 타입 ({{iana-stream-types}})이라는 확장 지점 (extension point)을
+스트림 타입 ({{iana-stream-types}})이라는 확장 포인트 (extension point)를
 설립한다.
 
-Implementations MUST ignore unknown or unsupported values in all extensible
-protocol elements.  Implementations MUST discard frames and unidirectional
-streams that have unknown or unsupported types.  This means that any of these
-extension points can be safely used by extensions without prior arrangement or
-negotiation.
+\["MUST" 구현은 모든 확장가능한 프로토콜 요소에서 알 수 없거나 지원되지 않는
+값을 반드시 무시해야만 한다.\] \["MUST" 구현은 알 수 없거나 지원되지 않는
+타입의 프레임과 단방향 스트림을 반드시 폐기해야만 (discard) 한다.\] 이는 그런
+(값이나 타입을 가진) 확장 포인트를 확장이 사전 처리 (arrangement)나 협상
+(negotiation) 없이도 안전하게 사용할 수 있음을 의미한다.\]
 
-Extensions that could change the semantics of existing protocol components MUST
-be negotiated before being used.  For example, an extension that changes the
-layout of the HEADERS frame cannot be used until the peer has given a positive
-signal that this is acceptable. In this case, it could also be necessary to
-coordinate when the revised layout comes into effect.
+\["MUST" 기존 프로토콜 요소 (component)의 의미 (semantics)를 바꿀 가능성이 있는
+확장은 반드시 사용하기 전에 협상을 해야 한다.\] 예를 들어, HEADERS 프레임의
+레이아웃을 바꾸는 확장은 상대방이 이를 받아들인다는 긍정적인 신호를 줄 때까지
+사용되어서는 안 된다.\] 또한, 변경된 레이아웃이 적용될 때 조정 (coordinate)이
+필요할 수도 있다.
 
-This document doesn't mandate a specific method for negotiating the use of an
-extension but notes that a setting ({{settings-parameters}}) could be used for
-that purpose.  If both peers set a value that indicates willingness to use the
-extension, then the extension can be used.  If a setting is used for extension
-negotiation, the default value MUST be defined in such a fashion that the
-extension is disabled if the setting is omitted.
+이 문서는 확장의 사용에 관한 협상을 하는 특정한 방법을 명시하진 않는다. 하지만
+그럴 목적으로 설정 ({{settings-parameters}})을 사용할 수도 있음을 참고하라.
+쌍방 (both peers)이 해당 확장을 쓰겠다는 의지를 나타내는 값을 설정하면, 해당
+확장은 사용할 수 있다. 확장 협상을 위해 설정을 사용한다면, \["MUST" 해당 설정이
+생략되었을 때 반드시 해당 확장을 비활성화하는 것이 기본값이 되도록 해야만
+한다.\]
 
 
 # Error Handling {#errors}
