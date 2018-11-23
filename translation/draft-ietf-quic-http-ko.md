@@ -1195,38 +1195,36 @@ QUIC의 MAX_STREAM_ID의 현재 값으로 설정된 '마지막 스트림 ID'를 
 정상적인 종료를 완료한 엔드포인트는 연결을 닫을 때 HTTP_NO_ERROR 코드를
 사용해야 한다.\]
 
-## Immediate Application Closure
+## 응용에 의한 즉시 폐쇄 (Immediate Application Closure)
 
-An HTTP/3 implementation can immediately close the QUIC connection at any time.
-This results in sending a QUIC CONNECTION_CLOSE frame to the peer; the error
-code in this frame indicates to the peer why the connection is being closed.
-See {{errors}} for error codes which can be used when closing a connection.
+HTTP/3 구현은 아무 때나 QUIC 연결을 즉시 닫을 수 있다. 이는 상대에게 QUIC의
+CONNECTION_CLOSE 프레임을 보내게 된다. 상대는 이 프레임의 에러 코드에서
+연결이 왜 닫히는지를 알게 된다.연결이 닫힐 때 어떤 에러 코드가 쓰일 수 있는지
+{{errors}}를 보라.
 
-Before closing the connection, a GOAWAY MAY be sent to allow the client to retry
-some requests.  Including the GOAWAY frame in the same packet as the QUIC
-CONNECTION_CLOSE frame improves the chances of the frame being received by
-clients.
+\["MAY" 연결을 닫기 전에, 클라이언트가 요청을 재시도할 수 있도록 GOAWAY
+프레임이 보내질 수있다.\] QUIC의 CONNECTION_CLOSE 프레임과 GOAWaY 프레임을
+같은 패킷에 포함시키면, 해당 프레임이 클라이언트에게 받아질 기회가 늘어난다.
 
-## Transport Closure
+## 전송에 의한 폐쇄 (Transport Closure)
 
-For various reasons, the QUIC transport could indicate to the application layer
-that the connection has terminated.  This might be due to an explicit closure
-by the peer, a transport-level error, or a change in network topology which
-interrupts connectivity.
+다양한 이유로, QUIC 전송은 응용 계층에게 연결이 중단되었음을 (terminated) 알릴
+수 있다. 상대가 명시적으로 닫거나, 전송 계층에서의 에러가 발생했거나, 연결성을
+방해하는 네트워크 토폴로지의 변화 등이 이유일 수 있다.
 
-If a connection terminates without a GOAWAY frame, clients MUST assume that any
-request which was sent, whether in whole or in part, might have been processed.
+연결이 GOAWAY 프레임 없이 중단되면, \["MUST" 클라이언트는 이미 보내진 요청은,
+그게 전체가 보내졌든 부분만 보내졌든, 처리되었을 거라고 반드시 가정해야만
+한다.\]
 
-# Extensions to HTTP/3 {#extensions}
+# HTTP/3의 확장 (Extensions to HTTP/3) {#extensions}
 
-HTTP/3 permits extension of the protocol.  Within the limitations described in
-this section, protocol extensions can be used to provide additional services or
-alter any aspect of the protocol.  Extensions are effective only within the
-scope of a single HTTP/3 connection.
+HTTP/3은 프로토콜 확장을 허용한다. 이 절에서 설명된 한계점 내에서, 추가
+서비스를 제공하거나 프로토콜의 특정 측면을 대체하기 위해 프로토콜 확장을 사용할
+수 있다. 단일 HTTP/3 연결의 범위 내에서만 확장이 유효하다.
 
-This applies to the protocol elements defined in this document.  This does not
-affect the existing options for extending HTTP, such as defining new methods,
-status codes, or header fields.
+이 확장은 본 문서에서 정의된 프로토콜의 구성 요소에 적용된다. HTTP 메소드
+(method), 상태 코드, 헤더 필드 등을 새로이 정의하는 HTTP의 확장은 기존 옵션에
+영향을 끼치지 않는다.
 
 Extensions are permitted to use new frame types ({{frames}}), new settings
 ({{settings-parameters}}), new error codes ({{errors}}), or new unidirectional
