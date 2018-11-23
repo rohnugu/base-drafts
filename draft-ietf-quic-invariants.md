@@ -106,6 +106,8 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
 document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}}
 when, and only when, they appear in all capitals, as shown here.
 
+This document uses terms and notational conventions from {{QUIC-TRANSPORT}}.
+
 
 # An Extremely Abstract Description of QUIC
 
@@ -121,7 +123,7 @@ A QUIC packet is the content of the UDP datagrams exchanged by QUIC endpoints.
 This document describes the contents of those datagrams.
 
 QUIC defines two types of packet header: long and short.  Packets with long
-headers are identified by the most significant bit of the first octet being set;
+headers are identified by the most significant bit of the first byte being set;
 packets with a short header have that bit cleared.
 
 Aside from the values described here, the payload of QUIC packets is
@@ -152,21 +154,21 @@ version-specific semantics are marked with an X.
 ~~~
 {: #fig-long title="QUIC Long Header"}
 
-A QUIC packet with a long header has the high bit of the first octet set to 1.
-All other bits in that octet are version specific.
+A QUIC packet with a long header has the high bit of the first byte set to 1.
+All other bits in that byte are version specific.
 
-The next four octets include a 32-bit Version field (see {{version}}).
+The next four bytes include a 32-bit Version field (see {{version}}).
 
-The next octet contains the length in octets of the two Connection IDs (see
+The next byte contains the length in bytes of the two Connection IDs (see
 {{connection-id}}) that follow.  Each length is encoded as a 4-bit unsigned
 integer.  The length of the Destination Connection ID (DCIL) occupies the high
-bits of the octet and the length of the Source Connection ID (SCIL) occupying
-the low bits of the octet.  An encoded length of 0 indicates that the connection
-ID is also 0 octets in length.  Non-zero encoded lengths are increased by 3 to
-get the full length of the connection ID; the final value is therefore either 0
-or between 4 and 18 octets in length (inclusive).  For example, an octet with
-the value 0xe0 describes a 17 octet Destination Connection ID and a zero octet
-Source Connection ID.
+bits of the byte and the length of the Source Connection ID (SCIL) occupies the
+low bits of the byte.  An encoded length of 0 indicates that the connection ID
+is also 0 bytes in length.  Non-zero encoded lengths are increased by 3 to get
+the full length of the connection ID; the final value is therefore either 0 or
+between 4 and 18 bytes in length (inclusive).  For example, an byte with the
+value 0xe0 describes a 17 byte Destination Connection ID and a zero byte Source
+Connection ID.
 
 The connection ID lengths are followed by two connection IDs.  The connection
 ID associated with the recipient of the packet (the Destination Connection ID)
@@ -187,26 +189,25 @@ version-specific semantics are marked with an X.
 +-+-+-+-+-+-+-+-+
 |0|X X X X X X X|
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-|                Destination Connection ID (0..144)           ...
+|                 Destination Connection ID (*)               ...
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 |X X X X X X X X X X X X X X X X X X X X X X X X X X X X X X  ...
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ~~~~~
 {: #fig-short title="QUIC Short Header"}
 
-A QUIC packet with a short header has the high bit of the first octet set to 0.
+A QUIC packet with a short header has the high bit of the first byte set to 0.
 
-A QUIC packet with a short header includes an optional Destination Connection
-ID.  The short header does not include the Connection ID Lengths, Source
-Connection ID, or Version fields.
+A QUIC packet with a short header includes a Destination Connection ID.  The
+short header does not include the Connection ID Lengths, Source Connection ID,
+or Version fields.
 
 The remainder of the packet has version-specific semantics.
 
 
 ## Connection ID
 
-A connection ID is an opaque field.  A connection ID can be 0 octets in length,
-or between 4 and 18 octets (inclusive).
+A connection ID is an opaque field of arbitrary length.
 
 The primary function of a connection ID is to ensure that changes in addressing
 at lower protocol layers (UDP, IP, and below) don't cause packets for a QUIC
@@ -236,12 +237,9 @@ a specific QUIC version, or to a range of QUIC versions.
 A QUIC endpoint that receives a packet with a long header and a version it
 either does not understand or does not support might send a Version Negotiation
 packet in response.  Packets with a short header do not trigger version
-negotiation and are always associated with an existing connection.
+negotiation.
 
-Consequently, until an endpoint has confirmed that its peer supports the QUIC
-version it has chosen, it can only send packets that use the long header.
-
-A Version Negotiation packet sets the high bit of the first octet, and thus it
+A Version Negotiation packet sets the high bit of the first byte, and thus it
 conforms with the format of a packet with a long header as defined in
 {{long-header}}.  A Version Negotiation packet is identifiable as such by the
 Version field, which is set to 0x00000000.
@@ -282,7 +280,7 @@ Version Negotiation packets do not use integrity or confidentiality protection.
 A specific QUIC version might authenticate the packet as part of its connection
 establishment process.
 
-The server MUST include the value from the Source Connection ID field of the
+An endpoint MUST include the value from the Source Connection ID field of the
 packet it receives in the Destination Connection ID field.  The value for Source
 Connection ID MUST be copied from the Destination Connection ID of the received
 packet, which is initially randomly selected by a client.  Echoing both
@@ -314,7 +312,7 @@ reliably extracting information from a flow based on version-specific traits
 requires that middleboxes retain state for every connection ID they see.
 
 The Version Negotiation packet described in this document is not
-integrity-protected, it only has modest protection against insertion by off-path
+integrity-protected; it only has modest protection against insertion by off-path
 attackers.  QUIC versions MUST define a mechanism that authenticates the values
 it contains.
 
@@ -344,6 +342,8 @@ The following statements are NOT guaranteed to be true for every QUIC version:
 * QUIC long headers are only exchanged during connection establishment
 
 * Every flow on a given 5-tuple will include a connection establishment phase
+
+* The first packets exchanged on a flow use the long header
 
 * QUIC forbids acknowledgments of packets that only contain ACK frames,
   therefore the last packet before a long period of quiescence might be assumed
