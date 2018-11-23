@@ -1110,19 +1110,19 @@ also be used (e.g., HTTP_PUSH_REFUSED, HTTP_PUSH_ALREADY_IN_CACHE; see
 {{errors}}). This asks the server not to transfer additional data and indicates
 that it will be discarded upon receipt.
 
-# 연결 종료 (Connection Closure)
+# 연결 폐쇄 (Connection Closure)
 
-연결이 한 번 설립되면, HTTP/3 연결은 연결이 종료될 때까지 여러 요청과 응답
-과정에 사용될 수 있다. 연결 종료는 여러 가지 경우에 발생할 수 있다.
+연결이 한 번 설립되면, HTTP/3 연결은 연결이 닫힐 때까지 여러 요청과 응답
+과정에 사용될 수 있다. 연결 폐쇄는 여러 가지 경우에 발생할 수 있다.
 
 ## 휴지 연결 (Idle Connections)
 
 각 QUIC 엔드포인트는 핸드셰이크 과정에서 휴지 타임아웃을 선언한다. 해당
 연결이 (상대방이 선언한) 타임아웃보다 더 긴 시간 휴지 상태 (어떤 패킷도
-도착하지 않음)이면 상대방은 해당 연결이 종료된 것으로 간주한다. 만약 기존
-연결이 서버가 고지한 (advertised) 휴지 타임아웃보다 긴 시간 동안 휴지 상태이면
-HTTP/3 구현은 새 요청에 대해 새 연결을 열 필요가 있으며, \["SHOULD" 특히 휴지
-타임아웃에 가까워지면 그런 동작을 해야 한다.\]
+도착하지 않음)이면 상대방은 해당 연결이 닫힌 (closed) 것으로 간주한다. 만약
+기존 연결이 서버가 고지한 (advertised) 휴지 타임아웃보다 긴 시간 동안 휴지
+상태이면 HTTP/3 구현은 새 요청에 대해 새 연결을 열 필요가 있으며, \["SHOULD"
+특히 휴지 타임아웃에 가까워지면 그런 동작을 해야 한다.\]
 
 HTTP 클라이언트는 요청이나 서버 푸시에 대한 응답이 있는 동안에는 연결을
 유지하기 위해 QUIC PING 프레임을 사용할 것이 기대되어진다. 만약 클라이언트가
@@ -1133,24 +1133,24 @@ HTTP 클라이언트는 요청이나 서버 푸시에 대한 응답이 있는 �
 \["SHOULD" 서버는 연결을 열린 상태로 유지하고자 PING 프레임을 사용하면 안
 된다.\]
 
-## Connection Shutdown
+## 연결 종료 (Connection Shutdown)
 
-Even when a connection is not idle, either endpoint can decide to stop using the
-connection and let the connection close gracefully.  Since clients drive request
-generation, clients perform a connection shutdown by not sending additional
-requests on the connection; responses and pushed responses associated to
-previous requests will continue to completion.  Servers perform the same
-function by communicating with clients.
+연결이 휴지 상태가 아닐지라도, 각 엔드포인트는 연결 사용을 멈추어 해당 연결이
+정상적으로 (gracefully) 종료 것을 결정할 수 있다. (클라이언트의 경우)
+클라이언트가 요청 생성을 주도하므로, 클라이언트가 해당 연결에 추가 요청을 더
+보내지 않는 식으로 연결 종료를 수행한다.기존 요청에 대한 응답 및 푸시된 응답은
+완료될 때까지 지속될 것이다. (반면에) 서버는 클라이언트와 통신하여 연결 종료
+기능을 수행한다.
 
-Servers initiate the shutdown of a connection by sending a GOAWAY frame
-({{frame-goaway}}).  The GOAWAY frame indicates that client-initiated requests
-on lower stream IDs were or might be processed in this connection, while
-requests on the indicated stream ID and greater were not accepted. This enables
-client and server to agree on which requests were accepted prior to the
-connection shutdown.  This identifier MAY be lower than the stream limit
-identified by a QUIC MAX_STREAM_ID frame, and MAY be zero if no requests were
-processed.  Servers SHOULD NOT increase the QUIC MAX_STREAM_ID limit after
-sending a GOAWAY frame.
+서버는 GOAWAY ({{frame-goaway}}) 프레임을 보내서 연결 종료를 시작한다. GOAWAY
+프레임은, (해당 프레임보다) 낮은 스트림 ID를 가진 '클라이언트가 시작한 요청'
+(client-initiated requests)이 이미 처리되었거나 처리될 수 있음을 알려준다. 반면
+이를 알려준 스트림 ID와 그 이후의 스트림 ID는 수용되지 않는다 (not accepted).
+이는 클라이언트와 서버가 연결 종료 전에 어떤 요청을 수용할지에 대해 확인할 수
+있게 한다. \["MAY" 이 식별자는 QUIC의 MAX_STREAM_ID 프레임에서 확인된 스트림
+한계 (stream limit)보다는 작을 수 있다.\] 또한 \["MAY" 이 식별자는 요청이
+처리된 적 없었다면 0일 수 있다. \] \["SHOULD NOT" 서버는 GOAWAY 프레임을
+보낸 뒤에 QUIC의 MAX_STREAM_ID 한계를 증가시켜서는 안 된다.\]
 
 Once sent, the server MUST cancel requests sent on streams with an identifier
 higher than the indicated last Stream ID.  Clients MUST NOT send new requests on
