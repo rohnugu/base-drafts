@@ -960,45 +960,45 @@ HTTP_REQUEST_CANCELLED 상태를 사용해서는 안 된다.\]
 
 ## CONNECT 메소드 (The CONNECT Method)
 
-The pseudo-method CONNECT ({{!RFC7231}}, Section 4.3.6) is primarily used with
-HTTP proxies to establish a TLS session with an origin server for the purposes
-of interacting with "https" resources. In HTTP/1.x, CONNECT is used to convert
-an entire HTTP connection into a tunnel to a remote host. In HTTP/2, the CONNECT
-method is used to establish a tunnel over a single HTTP/2 stream to a remote
-host for similar purposes.
+가상-메소드 (pseudo-method)인 CONNECT ({{!RFC7231}}의 4.3.6절)는 HTTP 프록시가
+원 서버 (origin server)와 "https" 리소스를 교환할 (interacting) 목적으로 TLS
+세션을 설립할 때 주로 쓰인다. HTTP/1.x에서는 CONNECT가 전체 HTTP 연결을 원격
+호스트로의 터널로 변환하고자 사용되었다. HTTP/2에서는 비슷한 목적으로 원격
+호스트에 단일 HTTP/2 스트림 위의 터널을 설립할 때 CONNECT 메소드가 사용된다.
 
-A CONNECT request in HTTP/3 functions in the same manner as in HTTP/2. The
-request MUST be formatted as described in {{!RFC7540}}, Section 8.3. A CONNECT
-request that does not conform to these restrictions is malformed. The request
-stream MUST NOT be closed at the end of the request.
+HTTP/3의 CONNECT 요청은 HTTP/2에서 동일한 방식으로 기능한다. \["MUST" CONNECT
+요청은 {{!RFC7540}}의 8.3절에 설명된 포맷을 반드시 사용해야만 한다.\] 이
+제한사항을 준수하지 않는 CONNECT 요청은 잘못된 형식 (malformed)을 가진 것이다.
+\["MUST NOT" 그러한 요청 스트림은 요청 끝에 절대로 닫아져서는 안 된다.\]
+(TODO: 마지막 문장이 이해가 잘 되지 않음. 왜 이런 요구사항이?)
 
-A proxy that supports CONNECT establishes a TCP connection ({{!RFC0793}}) to the
-server identified in the ":authority" pseudo-header field. Once this connection
-is successfully established, the proxy sends a HEADERS frame containing a 2xx
-series status code to the client, as defined in {{!RFC7231}}, Section 4.3.6.
+CONNECT를 지원하는 프록시는 가상 헤더 필드 ":authority"에서 특정된 서버로 TCP
+연결 ({{!RFC0793}})을 설립한다. 연결이 성공적으로 설립되었다면, 프록시는
+{{!RFC7231}}의 4.3.6절에 정의되었듯이 클라이언트에게 2xx 대의 상태 코드를 담은
+HEADERS 프레임을 보낸다.
 
-All DATA frames on the stream correspond to data sent or received on the TCP
-connection. Any DATA frame sent by the client is transmitted by the proxy to the
-TCP server; data received from the TCP server is packaged into DATA frames by
-the proxy. Note that the size and number of TCP segments is not guaranteed to
-map predictably to the size and number of HTTP DATA or QUIC STREAM frames.
+해당 스트림의 모든 DATA 프레임은 해당 TCP 연결에서 보내고 받은 데이터에
+대응한다. 프록시는 클라이언트가 보내온 각 DATA 프레임을 TCP 서버로 송신한다.
+프록시는 TCP 서버로부터 받은 데이터를 DATA 프레임으로 패키징한다. TCP
+세그먼트의 크기와 수가 HTTP DATA와 QUIC STREAM 프레임의 크기와 수에 정확히
+매핑되는 것이 보장되지 않음에 주의하라.
 
-The TCP connection can be closed by either peer. When the client ends the
-request stream (that is, the receive stream at the proxy enters the "Data Recvd"
-state), the proxy will set the FIN bit on its connection to the TCP server. When
-the proxy receives a packet with the FIN bit set, it will terminate the send
-stream that it sends to the client. TCP connections which remain half-closed in
-a single direction are not invalid, but are often handled poorly by servers, so
-clients SHOULD NOT close a stream for sending while they still expect to receive
-data from the target of the CONNECT.
+TCP 연결은 각 상대방에 의해 닫힐 수 있다. 클라이언트가 요청 스트림을 마칠 때,
+(즉, 프록시의 수신 스트림이 "Data Recvd" 상태에 들어갈 때), 프록시는 TCP
+서버로의 연결에 FIN 비트를 설정할 것이다. 프록시가 FIN 비트를 설정한 패킷을
+받을 때, 클라이언트로 보내는 (프록시의) 송신 스트림은 중단될 것이다. 단일
+방향으로 절반 닫기 (half-closed) 상태인 TCP 연결은 유효하지 않은 (invalid) 것은
+아니지만, 종종 서버가 제대로 처리하지 못한다. 따라서 \["SHOULD NOT"
+클라이언트는 CONNECT의 타겟 (서버)으로부터 받을 데이터가 아직 있을 것 같으면
+송신 스트림을 닫지 않아야 한다.\]
 
-A TCP connection error is signaled with QUIC RESET_STREAM frame. A proxy treats
-any error in the TCP connection, which includes receiving a TCP segment with the
-RST bit set, as a stream error of type HTTP_CONNECT_ERROR
-({{http-error-codes}}).  Correspondingly, a proxy MUST send a TCP segment with
-the RST bit set if it detects an error with the stream or the QUIC connection.
+TCP 연결 오류는 QUIC의 RESET_STREAM 프레임으로 알려진다. 프록시는 TCP 연결의
+어떤 에러도 처리하며, 이는 RSB 비트가 설정된 TCP 세그먼트를 받는 상황도
+포함하는데 이는 HTTP_CONNECT_ERROR ({{http-error-codes}}) 타입의 스트림 에러로
+처리된다. 마찬가지로, 프록시는 스트림이나 QUIC 연결에 에러를 감지하면 \["MUST"
+RSB 비트가 설정된 TCP 세그먼트를 (원 서버로) 반드시 보내야만 한다.\]
 
-## Request Prioritization {#priority}
+## 요청 우선순위 방안 (Request Prioritization) {#priority}
 
 HTTP/3 uses a priority scheme similar to that described in {{!RFC7540}}, Section
 5.3. In this priority scheme, a given stream can be designated as dependent upon
