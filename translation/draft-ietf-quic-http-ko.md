@@ -838,62 +838,62 @@ The payload and length of the frames are selected in any manner the
 implementation chooses.
 
 
-# HTTP Request Lifecycle
+# HTTP 요청의 생애주기 (HTTP Request Lifecycle)
 
-## HTTP Message Exchanges {#request-response}
+## HTTP 메시지 교환 (HTTP Message Exchanges) {#request-response}
 
-A client sends an HTTP request on a client-initiated bidirectional QUIC
-stream. A server sends an HTTP response on the same stream as the request.
+클라이언트는 HTTP 요청을 클라이언트가 시작한 특정 양방향 QUIC 스트림에 보낸다.
+서버는 해당 요청에 대한 HTTP 응답을 같은 스트림에 보낸다.
 
-An HTTP message (request or response) consists of:
+HTTP (요청 또는 응답) 메시지는 다음으로 구성된다:
 
-1. the message header (see {{!RFC7230}}, Section 3.2), sent as a single HEADERS
-   frame (see {{frame-headers}}),
+1. 단일 HEADERS 프레임 ({{frame-headers}}를 보라)으로 보내지는 메시지 헤더
+   (message header) ({{!RFC7230}}의 3.2절을 보라),
 
-2. the payload body (see {{!RFC7230}}, Section 3.3), sent as a series of DATA
-   frames (see {{frame-data}}),
+2. 일련의 DATA 프레임들 ({{frame-data}}를 보라)로 보내지는 페이로드 본체
+   (payload body) ({{!RFC7230}}의 3.3절을 보라),
 
-3. optionally, one HEADERS frame containing the trailer-part, if present (see
-   {{!RFC7230}}, Section 4.1.2).
+3. 선택사항으로, 만약 있다면 트레일러 부분 ({{!RFC7230}}의 4.1.2절을 보라)을
+   담고 있는 단일 HEADERS 프레임.
 
-A server MAY interleave one or more PUSH_PROMISE frames (see
-{{frame-push-promise}}) with the frames of a response message. These
-PUSH_PROMISE frames are not part of the response; see {{server-push}} for more
-details.
+\["MAY" 서버는 응답 메세지의 프레임들에 하나 이상의 PUSH_PROMISE 프레임
+({{frame-push-promise}})을 끼워넣을 수도 있다.\] 이 PUSH_PROMISE 프레임은
+응답의 일부가 아니다. 자세한 사항은 {{server-push}}를 보라.
 
-The "chunked" transfer encoding defined in Section 4.1 of {{!RFC7230}} MUST NOT
-be used.
+\["MUST NOT" {{!RFC7230}}의 4.1 절에 정의된 "청크 단위의" 전송 인코딩
+("chunked" transfer encoding)은 절대로 사용되어서는 안 된다. \]
 
-Trailing header fields are carried in an additional header block following the
-body. Senders MUST send only one header block in the trailers section;
-receivers MUST discard any subsequent header blocks.
+트레일러 헤더 (trailing header)의 필드는 본체 뒤에 추가적인 헤더 블록에 실린다.
+(역주: <https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Trailer>
+참고) \["MUST" 송신자 (sender)는 트레일러 섹션에 반드시 단 하나의 헤더 블록만을
+보내야만 한다.\] \["MUST" 수신자 (receiver)는 그 뒤의 헤더 블록은 반드시
+폐기해야만 한다.\]
 
-A response MAY consist of multiple messages when and only when one or more
-informational responses (1xx, see {{!RFC7231}}, Section 6.2) precede a final
-response to the same request.  Non-final responses do not contain a payload body
-or trailers.
+\["MAY" 응답은 하나 이상의 정보성 응답 (informational response) (1xx,
+{{!RFC7231}}의 6.2절을 보라)이 동일 요청에 대한 최종 응답에 선행될 때, 그리고
+그 때에만 여러 개의 메시지로 구성될 수도 있다.\] 최종 응답이 아닌 응답은
+페이로드 본체 또는 트레일러를 가지지 않는다.
 
-An HTTP request/response exchange fully consumes a bidirectional QUIC stream.
-After sending a request, a client closes the stream for sending; after sending a
-final response, the server closes the stream for sending and the QUIC stream is
-fully closed.  Requests and responses are considered complete when the
-corresponding QUIC stream is closed in the appropriate direction.
+HTTP 요청/응답 교환은 양방향 QUIC 스트림을 완전히 소비한다. 요청이 보내진 뒤에,
+클라이언트는 보내기용 스트림을 닫는다. 서버는 최종 응답을 송신한 뒤에 보내기용
+스트림을 닫고, 그러면 QUIC 스트림은 완전히 닫힌다. 요청과 응답은 대응하는 QUIC
+스트림이 적절한 방향에서 닫힐 때 완료되었다고 간주된다.
 
-A server can send a complete response prior to the client sending an entire
-request if the response does not depend on any portion of the request that has
-not been sent and received. When this is true, a server MAY request that the
-client abort transmission of a request without error by triggering a QUIC
-STOP_SENDING frame with error code HTTP_EARLY_RESPONSE, sending a complete
-response, and cleanly closing its stream. Clients MUST NOT discard complete
-responses as a result of having their request terminated abruptly, though
-clients can always discard responses at their discretion for other reasons.
+만약 (클라이언트가) 아직 보내지 않아 받지 못한 요청의 부분이 응답과 무관하면,
+서버는 클라이언트가 전체 요청을 다 보내기 전에 완전한 응답을 보낼 수 있다.
+이런 경우에, \["MAY" 서버는 클라이언트에게 요청의 전송을 중단토록 요청할 수도
+있다.\] 서버의 이 요청은 에러 코드 HTTP_EARLY_RESPONSE가 담긴 QUIC의
+STOP_SENDING 프레임을 야기해서, 완전한 응답을 송신한 뒤에, 스트림을 깔끔하게
+닫음으로써 행한다. 클라이언트는 (곧 말할 이유를 제외하고) 다른 이유로는 재량껏
+응답을 폐기할 수 있지만, \["MUST NOT" 클라이언트가 보낸 요청을 중단시키는
+결과를 낳은 완전한 응답을 절대로 폐기해서는 안 된다. \]
 
-Changes to the state of a request stream, including receiving a QUIC
-RESET_STREAM with any error code, do not affect the state of the server's
-response. Servers do not abort a response in progress solely due to a state
-change on the request stream.  However, if the request stream terminates without
-containing a usable HTTP request, the server SHOULD abort its response with the
-error code HTTP_INCOMPLETE_REQUEST.
+에러 코드를 포함하고 있는 QUIC의 RESET_STREAM을 (서버가) 받는 상태 변활를
+포함해, 요청 스트림의 상태의 변화는 서버의 응답 상태에 영향을 주지 않는다.
+서버는 요청 스트림의 상태 변화만을 이유로 진행 중은 응답을 중단하지 않는다.
+하지만, 요청 스트림이 사용가능한 HTTP 요청을 포함하지 않고 요청 스트림을
+중단하면, \["SHOULD" 서버는 에러 코드 HTTP_INCOMPLETE_REQUEST와 함께 응답을
+중단하여야 한다.\]
 
 
 ### Header Formatting and Compression
