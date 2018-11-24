@@ -64,11 +64,10 @@ informative:
 
 --- abstract
 
-The QUIC transport protocol has several features that are desirable in a
-transport for HTTP, such as stream multiplexing, per-stream flow control, and
-low-latency connection establishment.  This document describes a mapping of HTTP
-semantics over QUIC.  This document also identifies HTTP/2 features that are
-subsumed by QUIC, and describes how HTTP/2 extensions can be ported to HTTP/3.
+QUIC 전송 프로토콜은 스트림 멀티플렉싱, 스트림당 플로우 제어, 저지연 연결 설립
+등, HTTP를 위한 전송이 가질 바람직한 특징들을 가지고 있다. 이 문서는 QUIC에
+HTTP 의미를 매핑하는 방법을 설명한다. 이 문서는 또한 QUIC이 포함한 HTTP/2
+특징을 특정하고, HTTP/2 확장을 어떻게 HTTP/3으로 이전가능한지 설명한다.
 
 --- note_Note_to_Readers
 
@@ -80,6 +79,11 @@ Working Group information can be found at <https://github.com/quicwg>; source
 code and issues list for this draft can be found at
 <https://github.com/quicwg/base-drafts/labels/-http>.
 
+본 한국어 문서는 노희준 (hjroh@korea.ac.kr)이 네트워크 프로토콜 연구를
+위해 초벌 번역한 것이다. 본 Internet-Draft는 Simplified BSD License를 따르며,
+번역자는 본 번역물에 대해 해당 라이센스의 허용 범위 내에서 2차 저작물로서의
+모든 권리를 가진다. 단, 번역자는 번역 내용을 참고함으로써 발생할 수 있는 어떠한
+문제에 대해서도 책임을 지지 않는다.
 
 --- middle
 
@@ -1705,48 +1709,47 @@ HTTP/2에서 확장으로 정의된 프레임 타입은 HTTP/3에서도 적용�
 
 ## HTTP/2 SETTINGS 파라미터 (HTTP/2 SETTINGS Parameters) {#h2-settings}
 
-An important difference from HTTP/2 is that settings are sent once, at the
-beginning of the connection, and thereafter cannot change.  This eliminates
-many corner cases around synchronization of changes.
+(HTTP/3가) HTTP/2와 다른 중요한 점은, 연결 시작 시점에서 설정이 한 번 보내지면
+그 이후에 바꿀 수 없다는 점이다. 이는 변경으로 인한 동기화 문제와 관련된
+많은 특이 사례 (corner cases)를 제거한다.
 
-Some transport-level options that HTTP/2 specifies via the SETTINGS frame are
-superseded by QUIC transport parameters in HTTP/3. The HTTP-level options that
-are retained in HTTP/3 have the same value as in HTTP/2.
+SETTINGS 프레임을 통해 HTTP/2가 명시한 몇몇 전송 수준 옵션은 HTTP/3에서의
+QUIC 전송 파라미터에 의해 대체된다. HTTP/3에서 유지된 HTTP 수준 옵션은 HTTP/2와
+동일한 값을 갖는다.
 
-Below is a listing of how each HTTP/2 SETTINGS parameter is mapped:
+아래는 각 HTTP/2 SETTINGS 파라미터가 어떻게 매핑되는지를 나열한 것이다:
 
 SETTINGS_HEADER_TABLE_SIZE:
-: See [QPACK].
+: [QPACK]를 보라.
 
 SETTINGS_ENABLE_PUSH:
-: This is removed in favor of the MAX_PUSH_ID which provides a more granular
-  control over server push.
+: 서버 푸시를 좀 더 세분화하여 제어할 수 있는 MAX_PUSH_ID의 장점으로 제거됨.
 
 SETTINGS_MAX_CONCURRENT_STREAMS:
-: QUIC controls the largest open Stream ID as part of its flow control logic.
-  Specifying SETTINGS_MAX_CONCURRENT_STREAMS in the SETTINGS frame is an error.
+: QUIC은 플로우 제어 로직의 일부로 열려있는 스트림 중 가장 큰 값의 스트림 ID를
+  제어한다. SETTINGS 프레임에 SETTINGS_MAX_CONCURRENT_STREAMS를 명시하면 오류가
+ 발생한다.
 
 SETTINGS_INITIAL_WINDOW_SIZE:
-: QUIC requires both stream and connection flow control window sizes to be
-  specified in the initial transport handshake.  Specifying
-  SETTINGS_INITIAL_WINDOW_SIZE in the SETTINGS frame is an error.
+: QUIC은 초기 전송 핸드셰이크에서 스트림 플로우 제어 윈도우 크기와 연결 플로우
+  제어 윈도우 크기 모두를 명시하도록 요구한다. SETTINGS 프레임에서
+  SETTINGS_INITIAL_WINDOW_SIZE를 명시하면 오류가 발생한다.
 
 SETTINGS_MAX_FRAME_SIZE:
-: This setting has no equivalent in HTTP/3.  Specifying it in the SETTINGS frame
-  is an error.
+: HTTP/3에서는 동등한 설정이 없다. SETTINGS 프레임에서 이를 명시하면 오류가
+  발생한다.
 
 SETTINGS_MAX_HEADER_LIST_SIZE:
-: See {{settings-parameters}}.
+: {{settings-parameters}}를 보라.
 
-In HTTP/3, setting values are variable-length integers (6, 14, 30, or 62 bits
-long) rather than fixed-length 32-bit fields as in HTTP/2.  This will often
-produce a shorter encoding, but can produce a longer encoding for settings which
-use the full 32-bit space.  Settings ported from HTTP/2 might choose to redefine
-the format of their settings to avoid using the 62-bit encoding.
+HTTP/2에서는 설정값으로 고정 길이의 32비트 필드가 사용되었지만, HTTP/3에서의
+설정값은 가변 길이 정수 (variable-length intergers) (6, 14, 30, 또는 62 비트
+길이)이다. 이는 때로 더 짧은 인코딩을 만들지만, 32 비트 공간을 모두 사용하는
+설정에서는 더 긴 인코딩을 만든다. HTTP/2에서 이전된 설정은 62 비트 인코딩이
+사용되는 걸 피하도록 설정 포맷을 재정의해볼 수 있을 것이다.
 
-Settings need to be defined separately for HTTP/2 and HTTP/3. The IDs of
-settings defined in {{!RFC7540}} have been reserved for simplicity. See
-{{iana-settings}}.
+설정은 HTTP/2와 HTTP/3를 분리해서 정의할 필요가 있다. {{!RFC7540}}에 정의된
+설정에 관한 ID들은 단순성을 위해 이미 예약되었다. {{iana-settings}}를 보라.
 
 
 ## HTTP/2 Error Codes
