@@ -1594,72 +1594,70 @@ HTTP/3은 HTTP/2의 유사성은 선호하되, 필수 요구사항은 아니라�
 적용가능한 동일 의미 (semantics)를 갖는 확장'을 만들기 어렵거나 불가능하게 하는
 불필요한 변경을 피하고자 하였다.
 
-본 절에서는 그 파이를 기록하였다.
+본 절에서는 그 차이를 기록하였다.
 
-## Streams {#h2-streams}
+## 스트림 (Streams) {#h2-streams}
 
-HTTP/3 permits use of a larger number of streams (2^62-1) than HTTP/2.  The
-considerations about exhaustion of stream identifier space apply, though the
-space is significantly larger such that it is likely that other limits in QUIC
-are reached first, such as the limit on the connection flow control window.
+HTTP/3은 HTTP/2보다 훨씬 많은 수 (2^62-1)의 스트림의 사용을 허락한다. 스트림 ID
+공간의 부족 (exhaustion)에 관한 생각이 적용된 것이지만, 이 공간은 QUIC의 다른
+제한사항 (limit), 예를 들어 연결 플로우 제어 윈도우의 제한사항 보다 훨씬 크다.
 
-## HTTP Frame Types {#h2-frames}
+## HTTP 프레임 타입 (HTTP Frame Types) {#h2-frames}
 
-Many framing concepts from HTTP/2 can be elided away on QUIC, because the
-transport deals with them. Because frames are already on a stream, they can omit
-the stream number. Because frames do not block multiplexing (QUIC's multiplexing
-occurs below this layer), the support for variable-maximum-length packets can be
-removed. Because stream termination is handled by QUIC, an END_STREAM flag is
-not required.  This permits the removal of the Flags field from the generic
-frame layout.
+HTTP/2의 여러 프레임 개념들은 QUIC에서는 생략될 수 있는데, QUIC 전송이 이
+개념들을 다룰 수 있기 때문이다. 프레임은 이미 한 스트림에 있기 때문에,
+(HTTP/3는) 스트림 번호를 생략할 수 있다. (QUIC의 멀티플렉싱은 본 레이어
+아래에서 일어나기 때문에) 프레임은 멀티플렉싱을 블록할 수 없고, 따라서
+가변-최대-길이 (variable-maximum-length) 패킷의 지원은 제거될 수 있다. 스트림
+중단은 QUIC이 다루므로, END_STREAM 플래그는 필요하지 않다. 이는 일반적인
+프레임 레이아웃에서 Flags 필드의 제거를 허용한다.
 
-Frame payloads are largely drawn from {{!RFC7540}}. However, QUIC includes many
-features (e.g. flow control) which are also present in HTTP/2. In these cases,
-the HTTP mapping does not re-implement them. As a result, several HTTP/2 frame
-types are not required in HTTP/3. Where an HTTP/2-defined frame is no longer
-used, the frame ID has been reserved in order to maximize portability between
-HTTP/2 and HTTP/3 implementations. However, even equivalent frames between the
-two mappings are not identical.
+프레임 페이로드는 주로 {{!RFC7540}}에서 가져왔다. 하지만 QUIC은 HTTP/2에서도
+나타나는 여러 특징 (이를테면 플로우 제어)을 가지고 있다. 이 특징들을 (HTTP/3의)
+HTTP 매핑은 다시 구현하지 않는다. 때문에, 몇몇 HTTP/2 프레임 타입은
+HTTP/3에서는 필요하지 않다. HTTP/2가 정의한 특정 프레임이 더 이상 사용되지
+않더라도, 프레임 ID는 HTTP/2와 HTTP/3 구현 간의 이식성을 최대화하기 위해서
+예약되었다. 하지만 두 매핑에서 대등한 (equivalent) 프레임이라도 완전히 같지는
+않다.
 
-Many of the differences arise from the fact that HTTP/2 provides an absolute
-ordering between frames across all streams, while QUIC provides this guarantee
-on each stream only.  As a result, if a frame type makes assumptions that frames
-from different streams will still be received in the order sent, HTTP/3 will
-break them.
+HTTP/2가 모든 스트림에 걸쳐서 프레임 간 절대 순서를 제공하는 점에서 여러 차이가
+발생하는데, QUIC은 각 스트림에 대해서만 프레임 간 절대 순서를 보장하기
+떄문이다. 결과적으로 (HTTP2의) 어떤 프레임 타입이 다른 스트림에서 온 프레임도
+보내진 순서대로 받아야 한다는 가정을 하고 있다면, HTTP/3는 이를 위반하게 된다.
 
-For example, implicit in the HTTP/2 prioritization scheme is the notion of
-in-order delivery of priority changes (i.e., dependency tree mutations): since
-operations on the dependency tree such as reparenting a subtree are not
-commutative, both sender and receiver must apply them in the same order to
-ensure that both sides have a consistent view of the stream dependency tree.
-HTTP/2 specifies priority assignments in PRIORITY frames and (optionally) in
-HEADERS frames. To achieve in-order delivery of priority changes in HTTP/3,
-PRIORITY frames are sent on the control stream and the PRIORITY section is
-removed from the HEADERS frame.
+이를테면, HTTP/2의 우선순위 방안 (prioritization scheme)은 우선순위 변경사항
+(즉, 의존성 트리 변형)에 따라 순차전달 (in-order delivery)하는 것을 암묵적으로
+생각한다. 특정 서브트리의 부모 바꾸기 (reparenting) 같은 의존성 트리에의 연산은
+교환적 (cummutative)이지 않으므로, 송신자 (sender)와 수신자 (receiver)는 양측이
+스트림 의존성 트리에 대해 일관된 (consistent) 뷰를 갖도록 연산을 반드시 같은
+순서로 적용해만 한다. HTTP/2는 PRIORITY 프레임에 우선순위 할당을 명시하고,
+(선택적으로) HEADERS 프레임에서도 우선순위 할당을 명시한다. HTTP/3에서는
+우선순위 변경사항에 따라 순차전달하기 위해서 제어 스트림으로 PRIORITY 프레임을
+보내고, HEADERS 프레임에서는 PRIORITY 섹션을 제거한다.
 
-Likewise, HPACK was designed with the assumption of in-order delivery. A
-sequence of encoded header blocks must arrive (and be decoded) at an endpoint in
-the same order in which they were encoded. This ensures that the dynamic state
-at the two endpoints remains in sync.  As a result, HTTP/3 uses a modified
-version of HPACK, described in [QPACK].
+마찬가지로, HPACK는 순차전달 (in-order delivery) 가정으로 설계되었다. 인코딩된
+헤더 블록 열 (sequence)는 반드시 인코딩 된 순서 그대로 엔드포인트에
+도착되어야만 (그리고 디코딩되어야만) 한다. 이는 두 엔드포인트에서의 동적 상태가
+동기화된 채로 유지됨을 보장한다. 결과적으로, HTTP/3은 [QPACK]에 설명된 것과
+같이 HPACK의 수정된 버전을 사용한다.
 
-Frame type definitions in HTTP/3 often use the QUIC variable-length integer
-encoding.  In particular, Stream IDs use this encoding, which allow for a larger
-range of possible values than the encoding used in HTTP/2.  Some frames in
-HTTP/3 use an identifier rather than a Stream ID (e.g. Push IDs in PRIORITY
-frames). Redefinition of the encoding of extension frame types might be
-necessary if the encoding includes a Stream ID.
+HTTP/3의 프레임 타입 정의는 종종 QUIC의 가변 길이 정수 (variable-length
+integer) 인코딩을 사용한다. 특히, 스트림 ID는 이 인코딩을 사용하며, 이를 통해
+HTTP/2에서 사용된 인코딩보다 더 넓은 범위의 값이 가능하도록 허용한다. HTTP/3의
+몇몇 프레임은 스트림 ID보다는 자체적인 식별자를 사용한다. (예를 들어 PRIORITY
+프레임의 Push ID가 있다.) 해당 인코딩이 (HTTP/2의) 스트림 ID를 포함한다면, 확장
+프레임 타입의 인코딩은 재정의될 필요가 있을 수 있다.
 
-Because the Flags field is not present in generic HTTP/3 frames, those frames
-which depend on the presence of flags need to allocate space for flags as part
-of their frame payload.
+Flags 필드는 일반적인 HTTP/3 프레임에서는 등장하지 않으므로, 플래그의 존재에
+의존적인 프레임들은 해당 프레임 페이로드의 일부에 플래그를 위한 공간을 할당할
+필요가 있다.
 
-Other than this issue, frame type HTTP/2 extensions are typically portable to
-QUIC simply by replacing Stream 0 in HTTP/2 with a control stream in HTTP/3.
-HTTP/3 extensions will not assume ordering, but would not be harmed by ordering,
-and would be portable to HTTP/2 in the same manner.
+이 이슈를 제외하면, 프레임 타입 HTTP/2 확장은 보통 HTTP/2에서의 스트림 0을
+HTTP/3의 제어 스트림으로 대체하면 쉽게 QUIC으로 이전할 수 있다. HTTP/3 확장은
+순서에 관한 가정을 하지 않고, 따라서 (HTTP/3 확장은) 순서로 인해 문제가 되지
+않을 것이므로, 같은 방식으로 HTTP/2로 이전할 수 있을 것이다.
 
-Below is a listing of how each HTTP/2 frame type is mapped:
+아래는 HTTP/2 프레임 타입이 어떻게 매핑되는지에 관해 나열한 것이다:
 
 DATA (0x0):
 : Padding is not defined in HTTP/3 frames.  See {{frame-data}}.
