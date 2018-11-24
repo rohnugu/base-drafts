@@ -1645,7 +1645,7 @@ HTTP/3의 프레임 타입 정의는 종종 QUIC의 가변 길이 정수 (variab
 integer) 인코딩을 사용한다. 특히, 스트림 ID는 이 인코딩을 사용하며, 이를 통해
 HTTP/2에서 사용된 인코딩보다 더 넓은 범위의 값이 가능하도록 허용한다. HTTP/3의
 몇몇 프레임은 스트림 ID보다는 자체적인 식별자를 사용한다. (예를 들어 PRIORITY
-프레임의 Push ID가 있다.) 해당 인코딩이 (HTTP/2의) 스트림 ID를 포함한다면, 확장
+프레임의 푸시 ID가 있다.) 해당 인코딩이 (HTTP/2의) 스트림 ID를 포함한다면, 확장
 프레임 타입의 인코딩은 재정의될 필요가 있을 수 있다.
 
 Flags 필드는 일반적인 HTTP/3 프레임에서는 등장하지 않으므로, 플래그의 존재에
@@ -1660,50 +1660,50 @@ HTTP/3의 제어 스트림으로 대체하면 쉽게 QUIC으로 이전할 수 �
 아래는 HTTP/2 프레임 타입이 어떻게 매핑되는지에 관해 나열한 것이다:
 
 DATA (0x0):
-: Padding is not defined in HTTP/3 frames.  See {{frame-data}}.
+: HTTP/3 프레임에서는 패딩을 정의하지 않는다. {{frame-data}}를 보라.
 
 HEADERS (0x1):
-: As described above, the PRIORITY region of HEADERS is not supported. A
-  separate PRIORITY frame MUST be used. Padding is not defined in HTTP/3 frames.
-  See {{frame-headers}}.
+: 위에서 설명하였듯, HEADERS의 PRIORITY 영역이 지원되지 않는다. \["MUST" 분리된
+  PRIORITY 프레임이 반드시 사용되어야만 한다.\] HTTP/3 프레임에서는 패딩을
+  정의하지 않는다. {{frame-headers}}를 보라.
 
 PRIORITY (0x2):
-: As described above, the PRIORITY frame is sent on the control stream and can
-  reference a variety of identifiers.  See {{frame-priority}}.
+: 위에서 설명하였듯, PRIORITY 프레임이 제어 스트림에 전송되며, 여러 식별자를
+  참조할 수 있다. {{frame-priority}}를 보라.
 
 RST_STREAM (0x3):
-: RST_STREAM frames do not exist, since QUIC provides stream lifecycle
-  management.  The same code point is used for the CANCEL_PUSH frame
-  ({{frame-cancel-push}}).
+: QUIC이 스트림 생명주기 관리를 제공하므로 RST_STREAM 프레임은 존재하지 않는다.
+  같은 코드 포인트 (역주: 프레임 타입에 부여된 숫자, 여기서는 0x3)가
+  CANCEL_PUSH 프레임에 사용된다 ({{frame-cancel-push}}).
 
 SETTINGS (0x4):
-: SETTINGS frames are sent only at the beginning of the connection.  See
-  {{frame-settings}} and {{h2-settings}}.
+: SETTINGS 프레임은 연결 시작에만 보내진다. {{frame-settings}}와
+  {{h2-settings}}를 보라.
 
 PUSH_PROMISE (0x5):
-: The PUSH_PROMISE does not reference a stream; instead the push stream
-  references the PUSH_PROMISE frame using a Push ID.  See
-  {{frame-push-promise}}.
+: PUSH_PROMISE 프레임은 스트림을 참조하지 않는다. 대신, 푸시 스트림은 푸시
+  ID를 사용해 PUSH_PROMISE 프레임을 참조한다. {{frame-push-promise}}를 보라.
 
 PING (0x6):
-: PING frames do not exist, since QUIC provides equivalent functionality.
+: PING 프레임은 존재하지 않는다. QUIC이 동등한 기능을 제공하기 때문이다.
 
 GOAWAY (0x7):
-: GOAWAY is sent only from server to client and does not contain an error code.
-  See {{frame-goaway}}.
+: GOAWAY는 서버에서 클라이언트로만 보내지며, 에러 코드를 가지지 않는다.
+  {{frame-goaway}}를 보라.
 
 WINDOW_UPDATE (0x8):
-: WINDOW_UPDATE frames do not exist, since QUIC provides flow control.
+: WINDOW_UPDATE 프레임은 존재하지 않는다. QUIC이 플로우 제어를 제공하기
+  떄문이다.
 
 CONTINUATION (0x9):
-: CONTINUATION frames do not exist; instead, larger HEADERS/PUSH_PROMISE
-  frames than HTTP/2 are permitted.
+: CONTINUATION 프레임은 존재하지 않는다. 대신, HTTP/2보다 더 큰
+  HEADERS/PUSH_PROMISE는 허용된다.
 
-Frame types defined by extensions to HTTP/2 need to be separately registered for
-HTTP/3 if still applicable.  The IDs of frames defined in {{!RFC7540}} have been
-reserved for simplicity.  See {{iana-frames}}.
+HTTP/2에서 확장으로 정의된 프레임 타입은 HTTP/3에서도 적용가능하다면 분리하여
+등록될 필요가 있다. {{!RFC7540}}에 정의된 프레임의 ID는 단순성을 위해 이미
+예약되었다. {{iana-frames}}를 보라.
 
-## HTTP/2 SETTINGS Parameters {#h2-settings}
+## HTTP/2 SETTINGS 파라미터 (HTTP/2 SETTINGS Parameters) {#h2-settings}
 
 An important difference from HTTP/2 is that settings are sent once, at the
 beginning of the connection, and thereafter cannot change.  This eliminates
