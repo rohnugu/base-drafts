@@ -1408,7 +1408,7 @@ Code:
 
 Specification:
 : 프레임 레이아웃과 그 의미 (semantics)의 설명을 포함하는 명세에 대한 참조.
-  조건에 따라 등장하는 프레임의 부분도 포함함.
+  명세는 조건에 따라 등장하는 프레임의 부분도 포함해야 함.
 
 다음 테이블의 엔트리는 본 문서에 등록되어 있다.
 
@@ -1428,8 +1428,8 @@ Specification:
 | MAX_PUSH_ID      | 0xD    | {{frame-max-push-id}}      |
 | ---------------- | ------ | -------------------------- |
 
-추가적으로, N의 값이 (0..7)의 범위 (즉, `0xb`, `0x2a`, `0x49`, `0x68`, `0x87`,
-`0xa6`, `0xc5`, `0xe4`)에 있을 때 `0xb + (0x1f * N)` 꼴의 각 코드에 대해서는
+추가적으로, N의 값이 (0..7)의 범위에 있을 때 `0xb + (0x1f * N)` 꼴의 각 코드
+(즉, `0xb`, `0x2a`, `0x49`, `0x68`, `0x87`, `0xa6`, `0xc5`, `0xe4`)에 대해서는
 다음 값이 등록되어 있어야 한다:
 
 Frame Type:
@@ -1443,13 +1443,8 @@ Specification:
 본 문서는 HTTP/3 설정에 관한 레지스트리를 설립한다. "HTTP/3 Setting"
 레지스트리는 16 비트 공간을 관리한다. "HTTP/3 Setting" 레지스트리는 0x0000에서
 0xefff 범위의 값에 대해서는 "Expert Review" 정책 {{?RFC8126}}에 따라 운용되며,
-0xf000에서 0xffff 사이의 값에 대해서는 실험 사용으로 예약되어 있다.
-This document establishes a registry for HTTP/3 settings.  The "HTTP/3 Settings"
-registry manages a 16-bit space.  The "HTTP/3 Settings" registry operates under
-the "Expert Review" policy {{?RFC8126}} for values in the range from 0x0000 to
-0xefff, with values between and 0xf000 and 0xffff being reserved for
-Experimental Use.  지정 전문가는 {{RFC7540}}에 정의된 "HTTP/2 Setting"
-레지스트리와 동일하다.
+0xf000에서 0xffff 사이의 값에 대해서는 실험 사용으로 예약되어 있다. 지정
+전문가는 {{RFC7540}}에 정의된 "HTTP/2 Setting" 레지스트리와 동일하다.
 
 이 레지스트리는 {{RFC7540}}에 정의된 "HTTP/2 Setting" 레지스트리와는 분리되어
 있지만, (엔트리) 할당은 서로 유사한 것이 선호된다. 한 레지스트리에만 특정
@@ -1539,31 +1534,31 @@ Specification:
 | HTTP_MALFORMED_FRAME                | 0x01XX     | Error in frame formatting                | {{http-error-codes}}   |
 | ----------------------------------- | ---------- | ---------------------------------------- | ---------------------- |
 
-## Stream Types {#iana-stream-types}
+## 스트림 타입 (Stream Types) {#iana-stream-types}
 
-This document establishes a registry for HTTP/3 unidirectional stream types. The
-"HTTP/3 Stream Type" registry manages an 8-bit space.  The "HTTP/3 Stream Type"
-registry operates under either of the "IETF Review" or "IESG Approval" policies
-{{?RFC8126}} for values from 0x00 up to and including 0xef, with values from
-0xf0 up to and including 0xff being reserved for Experimental Use.
+이 문서는 HTTP/3 단방향 스트림 타입 코드의 레지스트리를 설립한다. "HTTP/3
+Stream Type" 레지스트리는 8-bit 공간을 관리한다. "HTTP/3 Stream Type"
+레지스트리는 0x00에서 0xef (0xef 포함)한 값을 "IETF Review" 나 "IESG
+Approval" 정책 {{?RFC8126}} 중 하나에 따라 레지스트리를 운용하며, 0xf0에서
+0xff 까지 (0xff 포함)의 값은 실험 사용을 위해 예약되었다.
 
-New entries in this registry require the following information:
+이 레지스트리에 들어가는 새 엔트리는 다음 정보가 요구된다:
 
 Stream Type:
-: A name or label for the stream type.
+: 스트림 타입의 이름 또는 레이블.
 
 Code:
-: The 8-bit code assigned to the stream type.
+: 스트림 타입에 할당된 8 비트 코드.
 
 Specification:
-: A reference to a specification that includes a description of the stream type,
-  including the layout semantics of its payload.
+: 스트림 타입에 대한 설명을 포함한 명세에의 참조. 명세는 페이로드의 레이아웃
+  의미도 포힘해야 함.
 
 Sender:
-: Which endpoint on a connection may initiate a stream of this type. Values are
-  "Client", "Server", or "Both".
+: 이 타입의 스트림을 시작할 수 있는 연결 상의 엔드포인트. 값은 "Client",
+  "Server", 또는 "Both".
 
-The entries in the following table are registered by this document.
+다음 테이블의 엔트리는 본 문서에 등록되어 있다.
 
 | ---------------- | ------ | -------------------------- | ------ |
 | Stream Type      | Code   | Specification              | Sender |
@@ -1572,12 +1567,12 @@ The entries in the following table are registered by this document.
 | Push Stream      | 0x50   | {{server-push}}            | Server |
 | ---------------- | ------ | -------------------------- | ------ |
 
-Additionally, for each code of the format `0x1f * N` for values of N in the
-range (0..8) (that is, `0x00`, `0x1f`, `0x3e`, `0x5d`, `0x7c`, `0x9b`, `0xba`,
-`0xd9`, `0xf8`), the following values should be registered:
+추가적으로, N의 값이 (0..8)의 범위에 있을 때 `0xb + (0x1f * N)` 꼴의 각 코드
+(즉, `0x00`, `0x1f`, `0x3e`, `0x5d`, `0x7c`, `0x9b`, `0xba`, `0xd9`, `0xf8`)에
+대해서는 다음 값이 등록되어 있어야 한다:
 
 Stream Type:
-: Reserved - GREASE
+: 예약됨 - GREASE
 
 Specification:
 : {{stream-grease}}
@@ -1950,7 +1945,6 @@ None.
 # Acknowledgements
 {:numbered="false"}
 
-The original authors of this specification were Robbie Shade and Mike Warres.
+본 명세의 원 저자는 Robbie Shade와 Mike Warres임.
 
-A substantial portion of Mike's contribution was supported by Microsoft during
-his employment there.
+Mike Warres가 공헌한 상당 부분은 그가 고용되었던 Microsoft의 지원을 받음.
