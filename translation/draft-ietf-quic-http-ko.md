@@ -1355,15 +1355,14 @@ HTTP 대체 서비스 (HTTP Alternative Services)가 HTTP/3 엔드포인트를 �
 필드들의 길이와 프레임의 길이가 정확히 맞아떨어지도록  보장해야만 한다.\]
 
 
-# IANA Considerations
+# IANA 고려 사항 (IANA Considerations)
 
-## Registration of HTTP/3 Identification String
+## HTTP3 식별 문자열의 등록 (Registration of HTTP/3 Identification String)
 
-This document creates a new registration for the identification of
-HTTP/3 in the "Application Layer Protocol Negotiation (ALPN)
-Protocol IDs" registry established in {{?RFC7301}}.
+이 문서는 HTTP/3의 식별을 위해 {{?RFC7301}}에서 설립된 "Application Layer
+Protocol Negotiation (ALPN) Protocol IDs"의 레지스트리에 신규 등록을 생성한다.
 
-The "h3" string identifies HTTP/3:
+"h3" 문자열은 HTTP/3을 식별한다:
 
   Protocol:
   : HTTP/3
@@ -1374,11 +1373,11 @@ The "h3" string identifies HTTP/3:
   Specification:
   : This document
 
-## Registration of QUIC Version Hint Alt-Svc Parameter
+## QUIC 버전 힌트 Alt-Svc 파라미터의 등록 (Registration of QUIC Version Hint
+Alt-Svc Parameter)
 
-This document creates a new registration for version-negotiation hints in the
-"Hypertext Transfer Protocol (HTTP) Alt-Svc Parameter" registry established in
-{{!RFC7838}}.
+이 문서는 {{!RFC7838}}에서 설립한 "Hypertext Transfer Protocol (HTTP) Alt-Svc
+Parameter" 레지스트리에서 버전 협상 힌트의 새로운 등록을 생성한다.
 
   Parameter:
   : "quic"
@@ -1386,33 +1385,32 @@ This document creates a new registration for version-negotiation hints in the
   Specification:
   : This document, {{alt-svc-version-hint}}
 
-## Frame Types {#iana-frames}
+## 프레임 타입 (Frame Types) {#iana-frames}
 
-This document establishes a registry for HTTP/3 frame type codes. The "HTTP/3
-Frame Type" registry manages an 8-bit space.  The "HTTP/3 Frame Type" registry
-operates under either of the "IETF Review" or "IESG Approval" policies
-{{?RFC8126}} for values from 0x00 up to and including 0xef, with values from
-0xf0 up to and including 0xff being reserved for Experimental Use.
+이 문서는 HTTP/3 프레임 타입 코드의 레지스트리를 설립한다. "HTTP/3 Frame Type"
+레지스트리는 8-bit 공간을 관리한다. "HTTP/3 Frame Type" 레지스트리는 0x00에서
+0xef (0xef 포함)한 값을 "IETF Review" 나 "IESG Approval" 정책 {{?RFC8126}} 중
+하나에 따라 레지스트리를 운용하며, 0xf0에서 0xff 까지 (0xff 포함)의 값은 실험
+사용을 위해 예약되었다.
 
-While this registry is separate from the "HTTP/2 Frame Type" registry defined in
-{{RFC7540}}, it is preferable that the assignments parallel each other.  If an
-entry is present in only one registry, every effort SHOULD be made to avoid
-assigning the corresponding value to an unrelated operation.
+이 레지스트리는 {{RFC7540}}에 정의된 "HTTP/2 Frame Type" 레지스트리와는
+분리되어 있지만, (엔트리) 할당은 서로 유사한 것이 선호된다. 한 레지스트리에만
+특정 엔트리가 있다면, \["SHOULD" 대응하는 값을 관련 없는 연산에 할당하는 것을
+최대한 피하고자 노력해야만 한다.\]
 
-New entries in this registry require the following information:
+이 레지스트리에 들어가는 새 엔트리는 다음 정보가 요구된다:
 
 Frame Type:
-: A name or label for the frame type.
+: 프레임 타입의 이름 또는 레이블.
 
 Code:
-: The 8-bit code assigned to the frame type.
+: 프레임 타입에 할당된 8 비트 코드
 
 Specification:
-: A reference to a specification that includes a description of the frame layout
-  and its semantics, including any parts of the frame that are conditionally
-  present.
+: 프레임 레이아웃과 그 의미 (semantics)의 설명을 포함하는 명세에 대한 참조.
+  조건에 따라 등장하는 프레임의 부분도 포함함.
 
-The entries in the following table are registered by this document.
+다음 테이블의 엔트리는 본 문서에 등록되어 있다.
 
 | ---------------- | ------ | -------------------------- |
 | Frame Type       | Code   | Specification              |
@@ -1430,43 +1428,46 @@ The entries in the following table are registered by this document.
 | MAX_PUSH_ID      | 0xD    | {{frame-max-push-id}}      |
 | ---------------- | ------ | -------------------------- |
 
-Additionally, each code of the format `0xb + (0x1f * N)` for values of N in the
-range (0..7) (that is, `0xb`, `0x2a`, `0x49`, `0x68`, `0x87`, `0xa6`, `0xc5`,
-and `0xe4`), the following values should be registered:
+추가적으로, N의 값이 (0..7)의 범위 (즉, `0xb`, `0x2a`, `0x49`, `0x68`, `0x87`,
+`0xa6`, `0xc5`, `0xe4`)에 있을 때 `0xb + (0x1f * N)` 꼴의 각 코드에 대해서는
+다음 값이 등록되어 있어야 한다:
 
 Frame Type:
-: Reserved - GREASE
+: 예약됨 - GREASE
 
 Specification:
 : {{frame-grease}}
 
-## Settings Parameters {#iana-settings}
+## 파리미터 설정 (Settings Parameters) {#iana-settings}
 
+본 문서는 HTTP/3 설정에 관한 레지스트리를 설립한다. "HTTP/3 Setting"
+레지스트리는 16 비트 공간을 관리한다. "HTTP/3 Setting" 레지스트리는 0x0000에서
+0xefff 범위의 값에 대해서는 "Expert Review" 정책 {{?RFC8126}}에 따라 운용되며,
+0xf000에서 0xffff 사이의 값에 대해서는 실험 사용으로 예약되어 있다.
 This document establishes a registry for HTTP/3 settings.  The "HTTP/3 Settings"
 registry manages a 16-bit space.  The "HTTP/3 Settings" registry operates under
 the "Expert Review" policy {{?RFC8126}} for values in the range from 0x0000 to
 0xefff, with values between and 0xf000 and 0xffff being reserved for
-Experimental Use.  The designated experts are the same as those for the "HTTP/2
-Settings" registry defined in {{RFC7540}}.
+Experimental Use.  지정 전문가는 {{RFC7540}}에 정의된 "HTTP/2 Setting"
+레지스트리와 동일하다.
 
-While this registry is separate from the "HTTP/2 Settings" registry defined in
-{{RFC7540}}, it is preferable that the assignments parallel each other.  If an
-entry is present in only one registry, every effort SHOULD be made to avoid
-assigning the corresponding value to an unrelated operation.
+이 레지스트리는 {{RFC7540}}에 정의된 "HTTP/2 Setting" 레지스트리와는 분리되어
+있지만, (엔트리) 할당은 서로 유사한 것이 선호된다. 한 레지스트리에만 특정
+엔트리가 있다면, \["SHOULD" 대응하는 값을 관련 없는 연산에 할당하는 것을 최대한
+피하고자 노력해야만 한다.\]
 
-New registrations are advised to provide the following information:
+새 등록은 다음 정보를 제공하는 것이 좋다:
 
 Name:
-: A symbolic name for the setting.  Specifying a setting name is optional.
+: 해당 설정에 대한 심볼 이름 설정 이름을 명시하는 것은 선택사항임.
 
 Code:
-: The 16-bit code assigned to the setting.
+: 해당 설정에 할당된 16 비트 코드.
 
 Specification:
-: An optional reference to a specification that describes the use of the
-  setting.
+: 해당 설정의 사용을 설명하는 명세에의 참조 (선택사항).
 
-The entries in the following table are registered by this document.
+다음 테이블의 엔트리는 본 문서에 등록되어 있다.
 
 | ---------------------------- | ------ | ------------------------- |
 | Setting Name                 | Code   | Specification             |
@@ -1478,43 +1479,40 @@ The entries in the following table are registered by this document.
 | MAX_HEADER_LIST_SIZE         | 0x6    | {{settings-parameters}}   |
 | ---------------------------- | ------ | ------------------------- |
 
-Additionally, each code of the format `0x?a?a` where each `?` is any four bits
-(that is, `0x0a0a`, `0x0a1a`, etc. through `0xfafa`), the following values
-should be registered:
+추가적으로, 각 `?`이 4비트 값이라고 할 때 `0x?a?a` 꼴의 각 코드 (즉, `0x0a0a`,
+`0x0a1a`, 부터 `0xfafa`까지)에 대해서는 다음 값이 등록되어 있어야 한다:
 
 Name:
-: Reserved - GREASE
+: 예약됨 - GREASE
 
 Specification:
 : {{settings-parameters}}
 
-## Error Codes {#iana-error-codes}
+## 에러 코드 (Error Codes) {#iana-error-codes}
 
-This document establishes a registry for HTTP/3 error codes. The "HTTP/3 Error
-Code" registry manages a 16-bit space.  The "HTTP/3 Error Code" registry
-operates under the "Expert Review" policy {{?RFC8126}}.
+본 문서는 HTTP/3 에러 코드에 관한 레지스트리를 설립한다. "HTTP/3 Error Code"
+레지스트리는 16 비트 공간을 관리한다. "HTTP/3 Error Code" 레지스트리는 "Expert
+Review" 정책 {{?RFC8126}}에 따라 운용된다.
 
-Registrations for error codes are required to include a description
-of the error code.  An expert reviewer is advised to examine new
-registrations for possible duplication with existing error codes.
-Use of existing registrations is to be encouraged, but not mandated.
+에러 코드의 등록에는 에러 코드의 설명을 포함하도록 요구된다. 전문 리뷰어는 새
+에러 코드 등록이 기존 에러 코드와 충돌할 가능성이 있는지 살펴보기 (examine)
+바란다.
 
-New registrations are advised to provide the following information:
+새 등록은 다음 정보를 제공하는 것이 좋다:
 
 Name:
-: A name for the error code.  Specifying an error code name is optional.
+: 에러 코드 이름. 에러 코드 이름을 명시하는 것은 선택사항임.
 
 Code:
-: The 16-bit error code value.
+: 16 비트 에러 코드 값.
 
 Description:
-: A brief description of the error code semantics, longer if no detailed
-  specification is provided.
+: 에러 코드 의미의 간략한 설명, 만약 더 자세한 명세를 제공할 수 없다면.
 
 Specification:
-: An optional reference for a specification that defines the error code.
+: 에러 코드를 정의하는 명세에의 참조 (선택사항).
 
-The entries in the following table are registered by this document.
+다음 테이블의 엔트리는 본 문서에 등록되어 있다.
 
 | ----------------------------------- | ---------- | ---------------------------------------- | ---------------------- |
 | Name                                | Code       | Description                              | Specification          |
