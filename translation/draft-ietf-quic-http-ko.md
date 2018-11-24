@@ -931,34 +931,34 @@ HTTP/3은 [QPACK]에 설명된 QPACK 헤더 압축을 사용한다. QPACK 헤더
 스트림 오류로 처리된다.\]
 
 
-### Request Cancellation
+### 요청 취소 (Request Cancellation)
 
-Either client or server can cancel requests by aborting the stream (QUIC
-RESET_STREAM and/or STOP_SENDING frames, as appropriate) with an error code of
-HTTP_REQUEST_CANCELLED ({{http-error-codes}}).  When the client cancels a
-response, it indicates that this response is no longer of interest.
-Implementations SHOULD cancel requests by aborting both directions of a stream.
+클라이언트 혹은 서버는 오류 코드 HTTP_REQUEST_CANCELLED
+({{http-error-codes}})와 함께 스트림을 중단함으로써 (적절하게는, QUIC의
+RESET_STREAM 그리고/또는 STOP_SENDING 프레임으로) 요청을 취소시킬 수 있다.
+클라이언트가 응답을 취소시킨다는 것은 해당 응답이 더 이상 관심없음을 나타낸다.
+\["SHOULD" 구현은 스트림 양방향을 중단시켜서 요청을 취소시킬 수 있어야 한다.\]
 
-When the server aborts its response stream using HTTP_REQUEST_CANCELLED, it
-indicates that no application processing was performed.  The client can treat
-requests cancelled by the server as though they had never been sent at all,
-thereby allowing them to be retried later on a new connection.  Servers MUST NOT
-use the HTTP_REQUEST_CANCELLED status for requests which were partially or fully
-processed.
+서버가 HTTP_REQUEST_CANCELLED를 사용해 응답 스트림을 중단할 때는 응용이 전혀
+처리하지 않았음을 나타낸다. 클라이언트는 서버에 의해 취소된 요청을 요청 자체가
+보내지지 않았던 것처럼, 그래서 새 연결에서 추후 재전송될 수 있도록 처리할 수
+있다. \["MUST NOT" 서버는 일부 또는 전부가 처리된 요청에 대해 절대로
+HTTP_REQUEST_CANCELLED 상태를 사용해서는 안 된다.\]
 
   Note:
-  : In this context, "processed" means that some data from the stream was
-    passed to some higher layer of software that might have taken some action as
-    a result.
+  : 여기서 "처리"는 해당 스트림의 어떤 데이터가 소프트웨어의 특정 상위 계층에
+    전달되어 최종적으로 어떤 행동을 야기했을 수 있는 상황을 가리킨다.
 
-If a stream is cancelled after receiving a complete response, the client MAY
-ignore the cancellation and use the response.  However, if a stream is cancelled
-after receiving a partial response, the response SHOULD NOT be used.
-Automatically retrying such requests is not possible, unless this is otherwise
-permitted (e.g., idempotent actions like GET, PUT, or DELETE).
+스트림이 완전한 응답을 받은 뒤 취소되었다면, \["MAY" 클라이언트는 그런 취소는
+무시하고, 해당 응답을 사용할 수도 있다.\] 하지만, 스트림이 부분적인 응답만
+받은 후에 취소되었다면, \["SHOULD NOT" 그런 응답은 사용되어선 안 된다.\]
+(GET, PUT, DELETE와 같이 멱등적인 (idempotent) 행동이라서) 재시도가 허용된
+경우가 아니라면, 그런 요청을 자동적으로 재시도할 수 없다. (역주: 멱등적인
+행동은 동일 행동이 반복해서 실행되어도 한 번만 실행한 것과 완전히 동일한
+효과를 갖는 행동을 말한다.)
 
 
-## The CONNECT Method
+## CONNECT 메소드 (The CONNECT Method)
 
 The pseudo-method CONNECT ({{!RFC7231}}, Section 4.3.6) is primarily used with
 HTTP proxies to establish a TLS session with an origin server for the purposes
