@@ -64,7 +64,7 @@ informative:
 
 --- abstract
 
-QUIC 전송 프로토콜은 스트림 멀티플렉싱, 스트림당 플로우 제어, 저지연 연결 설립
+QUIC 전송 프로토콜은 스트림 멀티플렉싱, 스트림당 흐름 제어, 저지연 연결 설립
 등, HTTP를 위한 전송이 가질 바람직한 특징들을 가지고 있다. 이 문서는 QUIC에
 HTTP 의미를 매핑하는 방법을 설명한다. 이 문서는 또한 QUIC이 포함한 HTTP/2
 특징을 특정하고, HTTP/2 확장을 어떻게 HTTP/3으로 이전가능한지 설명한다.
@@ -998,62 +998,69 @@ TCP 연결 오류는 QUIC의 RESET_STREAM 프레임으로 알려진다. 프록�
 처리된다. 마찬가지로, 프록시는 스트림이나 QUIC 연결에 에러를 감지하면 \["MUST"
 RSB 비트가 설정된 TCP 세그먼트를 (원 서버로) 반드시 보내야만 한다.\]
 
-## 요청 우선순위 방안 (Request Prioritization) {#priority}
+## 요청의 우선순위 결정법 (Request Prioritization) {#priority}
 
-HTTP/3 uses a priority scheme similar to that described in {{!RFC7540}}, Section
-5.3. In this priority scheme, a given stream can be designated as dependent upon
-another request, which expresses the preference that the latter stream (the
-"parent" request) be allocated resources before the former stream (the
-"dependent" request). Taken together, the dependencies across all requests in a
-connection form a dependency tree. The structure of the dependency tree changes
-as PRIORITY frames add, remove, or change the dependency links between requests.
+HTTP/3은 {{!RFC7540}}의 5.3절에 설명된 것과 비슷한 우선순위 결정법을 사용한다.
+이 우선순위 결정법에서, 특정 스트림은 다른 요청에 의존적이다라고 지정될 수
+있으며, 이는 다른 요청의 스트림 ("부모" 요청)이 특정 스트림 ("의존" 요청)보다
+먼저 자원이 할당되는 것을 선호함을 나타낸다. (이러한 선호도를) 합쳐서 보면,
+특정 연결의 모든 요청 간의 의존성은 의존성 트리를 형성한다. 의존성 트리의
+구조는 PRIORITY 프레임이 요청 간의 의존성 링크를 추가하거나, 제거하거나, 또는
+변경할 때 바뀐다.
 
-The PRIORITY frame {{frame-priority}} identifies a prioritized element. The
-elements which can be prioritized are:
+PRIORITY 프레임 {{frame-priority}}는 우선시되는 요소를 특정한다. 우선시가능한
+요소는 다음과 같다:
 
-- Requests, identified by the ID of the request stream
-- Pushes, identified by the Push ID of the promised resource
-  ({{frame-push-promise}})
-- Placeholders, identified by a Placeholder ID
+- 요청 스트림의 ID로 특정되는 요청
+- 약속된 자원의 푸시 ID로 특정되는 푸시 ({{frame-push-promise}})
+- 플레이스홀더 ID로 특정되는 플레이스홀더 (Placeholder)
 
-An element can depend on another element or on the root of the tree.  A
-reference to an element which is no longer in the tree is treated as a reference
-to the root of the tree.
+특정 요소는 트리의 루트나 다른 요소에 의존할 수 있다. 더 이상 트리에 없는
+요소에의 참조는 트리의 루트로의 참조로 처리된다.
 
 ### Placeholders
 
-In HTTP/2, certain implementations used closed or unused streams as placeholders
-in describing the relative priority of requests.  However, this created
-confusion as servers could not reliably identify which elements of the priority
-tree could safely be discarded. Clients could potentially reference closed
-streams long after the server had discarded state, leading to disparate views of
-the prioritization the client had attempted to express.
+HTTP/2의 특정 구현에서 닫힌 또는 사용하지 않는 (unused) 스트림을 '요청의
+상대적인 우선순위를 나타내고자 플레이스홀더 (placeholder)로 사용했다. 하지만,
+이는 우선순위 트리의 어떤 요소를 안전하게 폐기할 수 있는지를 확실히 판단할 수
+없게 만들어서 혼란을 야기했다. 서버가 (어떤 요소를) 폐기 상태로 둔 뒤 오래
+뒤에야 클라이언트가 잠재적으로 닫힌 스트림을 참조할 수 있었다. 이는
+클라이언트가 표현하고자 한 우선순위와는 전혀 다른 (disparate) 뷰를 야기했다.
+(역주: <https://chadaustin.me/2014/10/http2-request-priorities-a-summary/>와
+<https://chadaustin.me/2014/11/update-on-http2-priority/>를 보면 좀 더 잘
+이해할 수 있다. 여기서 플레이스홀더는 쓸모없는데 자리를 차지하는 스트림이다.
+하지만 서버의 구현 측면에서 플레이스홀더 간의 우선순위의 고저를 플레이스홀더
+간의 의존성으로 구분하고, 일정 시간이 지난 뒤 불필요한 플레이스홀더를 제거하는
+방법을 써볼 수 있을 것이다. 한편, 특정 스트림이 플레이스홀더인지를 알 수 없는
+클라이언트로서는 명시된 가중치만 가지고 의존성 트리를 만들어야 한다. 이런
+상황에서 이는 플레이스홀더로 지정한 스트림을 바로 지우지 않는 것은 클라이언트와
+서버의 의존성 트리가 서로 달라지는 결과를 낳는 것이다.)
 
-In HTTP/3, a number of placeholders are explicitly permitted by the server using
-the `SETTINGS_NUM_PLACEHOLDERS` setting. Because the server commits to maintain
-these IDs in the tree, clients can use them with confidence that the server will
-not have discarded the state.
+HTTP/3에서는 서버가 `SETTINGS_NUM_PLACEHOLDERS` 설정을 사용하면, 여러
+플레이스홀더를 명시적으로 허용하게 된다. 서버가 트리 내에 유지할 플레이스홀더 ID를
+밝히므로, 클라이언트는 서버가 해당 상태를 폐기하지 않을 것이라는 확신을 가지고
+플레이스홀더를 사용할 수 있다.
 
-Placeholders are identified by an ID between zero and one less than the number
-of placeholders the server has permitted.
+플레이스홀더는 0과 서버가 허용한 플레이스 홀더 수보다 1 작은 수 사이의 범위를
+가지는 ID로 특정된다.
 
 ### Priority Tree Maintenance
 
-Servers can aggressively prune inactive regions from the priority tree, because
-placeholders will be used to "root" any persistent structure of the tree which
-the client cares about retaining.  For prioritization purposes, a node in the
-tree is considered "inactive" when the corresponding stream has been closed for
-at least two round-trip times (using any reasonable estimate available on the
-server).  This delay helps mitigate race conditions where the server has pruned
-a node the client believed was still active and used as a Stream Dependency.
+서버는 우선순위 트리에서 비활성 영역 (inactive region)을 적극적으로 잘라낼
+(prune) 수 있다. 플레이스홀더는 클라이언트가 유지하려고 (retaining) 노력하는
+트리가 일정한 (persistent) 구조로 "뿌리내리도록" 하기 위해서 사용될 것이다.
+우선순위 결정을 위해서, 트리의 노드는, 노드에 대응하는 스트림이 2 RTT
+(round-trip times) 동안 닫혀있었을 때, "비활성 노드"라고 간주된다. 이 지연은
+어떤 노드가 클라이언트(의 뷰)에서는 아직 스트림 의존성에 사용되는 활성 노드로
+간주됨에도 서버에 의해서 잘릴 경우 발생할 수 있는 경쟁 조건 (race condition)을
+경감하는데 도움이 된다.
 
-Specifically, the server MAY at any time:
+구체적으로, \["MAY" 서버는 다음(의 행동)을 아무 때에나 할 수 있다:\]
 
-- Identify and discard branches of the tree containing only inactive nodes
-  (i.e. a node with only other inactive nodes as descendants, along with those
-  descendants)
-- Identify and condense interior regions of the tree containing only inactive
-  nodes, allocating weight appropriately
+- 비활성 노드만으로 구성된 트리 가지를 식별하고 폐기 (즉, 후손과 그 후손들이
+  모두 비활성 노드로만 구성된 노드)
+- 비활성 노드로만 구성된 트리 내부 영역을 특정하고 적절히 가중치를 할당하면서
+  압축
 
 ~~~~~~~~~~  drawing
     x                x                 x
@@ -1068,17 +1075,16 @@ Specifically, the server MAY at any time:
 ~~~~~~~~~~
 {: #fig-pruning title="Example of Priority Tree Pruning"}
 
-In the example in {{fig-pruning}}, `P` represents a Placeholder, `A` represents
-an active node, and `I` represents an inactive node.  In the first step, the
-server discards two inactive branches (each a single node).  In the second step,
-the server condenses an interior inactive node.  Note that these transformations
-will result in no change in the resources allocated to a particular active
-stream.
+{{fig-pruning}}의 예제에서, `P`는 플레이스홀더이고, `A`는 활성 노드이며 `I`는
+비활성 노드이다. 1단계로, 서버는 두 비활성 브랜치 (각각 단일 노드)를 폐기한다.
+2단계로, 서버는 (트리의) 내부 비활성 노드를 압축한다. 이 변형은 특정 활성
+스트림에 할당된 자원에 변화를 주지 않을 것이다.
 
-Clients SHOULD assume the server is actively performing such pruning and SHOULD
-NOT declare a dependency on a stream it knows to have been closed.
+\["SHOULD" 클라이언트는 서버가 적극적으로 그런 잘라내기를 할 것임을 가정해야
+한다.\] 또한 \["SHOULD NOT" 클라이언트는 닫힌 것이 확실한 스트림에 의존성을
+선언 (declare)해서는 안 된다.\]
 
-## Server Push
+## 서버 푸시 (Server Push)
 
 HTTP/3 server push is similar to what is described in HTTP/2 {{!RFC7540}}, but
 uses different mechanisms.
@@ -1603,7 +1609,7 @@ HTTP/3은 HTTP/2의 유사성은 선호하되, 필수 요구사항은 아니라�
 
 HTTP/3은 HTTP/2보다 훨씬 많은 수 (2^62-1)의 스트림의 사용을 허락한다. 스트림 ID
 공간의 부족 (exhaustion)에 관한 생각이 적용된 것이지만, 이 공간은 QUIC의 다른
-제한사항 (limit), 예를 들어 연결 플로우 제어 윈도우의 제한사항 보다 훨씬 크다.
+제한사항 (limit), 예를 들어 연결 흐름 제어 윈도우의 제한사항 보다 훨씬 크다.
 
 ## HTTP 프레임 타입 (HTTP Frame Types) {#h2-frames}
 
@@ -1616,7 +1622,7 @@ HTTP/2의 여러 프레임 개념들은 QUIC에서는 생략될 수 있는데, Q
 Flags 필드의 제거를 허용한다.
 
 프레임 페이로드는 주로 {{!RFC7540}}에서 가져왔다. 하지만 QUIC은 HTTP/2에서도
-나타나는 여러 특징 (이를테면 플로우 제어)을 가지고 있다. 이 특징들을 (HTTP/3의)
+나타나는 여러 특징 (이를테면 흐름 제어)을 가지고 있다. 이 특징들을 (HTTP/3의)
 HTTP 매핑은 다시 구현하지 않는다. 때문에, 몇몇 HTTP/2 프레임 타입은
 HTTP/3에서는 필요하지 않다. HTTP/2가 정의한 특정 프레임이 더 이상 사용되지
 않더라도, 프레임 ID는 HTTP/2와 HTTP/3 구현 간의 이식성을 최대화하기 위해서
@@ -1695,7 +1701,7 @@ GOAWAY (0x7):
   {{frame-goaway}}를 보라.
 
 WINDOW_UPDATE (0x8):
-: WINDOW_UPDATE 프레임은 존재하지 않는다. QUIC이 플로우 제어를 제공하기
+: WINDOW_UPDATE 프레임은 존재하지 않는다. QUIC이 흐름 제어를 제공하기
   떄문이다.
 
 CONTINUATION (0x9):
@@ -1725,12 +1731,12 @@ SETTINGS_ENABLE_PUSH:
 : 서버 푸시를 좀 더 세분화하여 제어할 수 있는 MAX_PUSH_ID의 장점으로 제거됨.
 
 SETTINGS_MAX_CONCURRENT_STREAMS:
-: QUIC은 플로우 제어 로직의 일부로 열려있는 스트림 중 가장 큰 값의 스트림 ID를
+: QUIC은 흐름 제어 로직의 일부로 열려있는 스트림 중 가장 큰 값의 스트림 ID를
   제어한다. SETTINGS 프레임에 SETTINGS_MAX_CONCURRENT_STREAMS를 명시하면 오류가
  발생한다.
 
 SETTINGS_INITIAL_WINDOW_SIZE:
-: QUIC은 초기 전송 핸드셰이크에서 스트림 플로우 제어 윈도우 크기와 연결 플로우
+: QUIC은 초기 전송 핸드셰이크에서 스트림 흐름 제어 윈도우 크기와 연결 흐름
   제어 윈도우 크기 모두를 명시하도록 요구한다. SETTINGS 프레임에서
   SETTINGS_INITIAL_WINDOW_SIZE를 명시하면 오류가 발생한다.
 
@@ -1770,7 +1776,7 @@ INTERNAL_ERROR (0x2):
 : {{http-error-codes}}에서의 HTTP_INTERNAL_ERROR.
 
 FLOW_CONTROL_ERROR (0x3):
-: QUIC이 플로우 제어를 하므로 활용할 수 없음. QUIC 계층에서
+: QUIC이 흐름 제어를 하므로 활용할 수 없음. QUIC 계층에서
   QUIC_FLOW_CONTROL_RECEIVED_TOO_MUCH_DATA를 발생시킬 것이다.
 
 SETTINGS_TIMEOUT (0x4):
