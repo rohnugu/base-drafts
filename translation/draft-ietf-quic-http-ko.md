@@ -1582,20 +1582,19 @@ Sender:
 
 --- back
 
-# Considerations for Transitioning from HTTP/2
+# HTTP/2에서 전환 시 고려 사항 (Considerations for Transitioning from HTTP/2)
 
-HTTP/3 is strongly informed by HTTP/2, and bears many similarities.  This
-section describes the approach taken to design HTTP/3, points out important
-differences from HTTP/2, and describes how to map HTTP/2 extensions into HTTP/3.
+HTTP/3은 HTTP/2에서 많은 영향을 받았고, 많은 공통점을 가진다. 이 절에서는
+HTTP/3의 설계에 이르게 한 접근법을 설명하고, HTTP/2와의 주요 차이점을 짚고,
+HTTP/2 확장을 HTTP/3로 매핑하는 방법을 설명한다.
 
-HTTP/3 begins from the premise that similarity to HTTP/2 is preferable, but not
-a hard requirement.  HTTP/3 departs from HTTP/2 primarily where necessary to
-accommodate the differences in behavior between QUIC and TCP (lack of ordering,
-support for streams).  We intend to avoid gratuitous changes which make it
-difficult or impossible to build extensions with the same semantics applicable
-to both protocols at once.
+HTTP/3은 HTTP/2의 유사성은 선호하되, 필수 요구사항은 아니라는 전제에서
+시작했다. HTTP/3은 QUIC과 TCP 사이의 동작 차이 (순서 없음, 스트림 지원)를
+수용할 필요가 있을 때 주로 HTTP/2와 멀어졌다. 우리는 '두 프로토콜에 동시에
+적용가능한 동일 의미 (semantics)를 갖는 확장'을 만들기 어렵거나 불가능하게 하는
+불필요한 변경을 피하고자 하였다.
 
-These departures are noted in this section.
+본 절에서는 그 파이를 기록하였다.
 
 ## Streams {#h2-streams}
 
