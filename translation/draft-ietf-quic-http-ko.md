@@ -896,40 +896,40 @@ STOP_SENDING 프레임을 야기해서, 완전한 응답을 송신한 뒤에, �
 중단하여야 한다.\]
 
 
-### Header Formatting and Compression
+### 헤더 포맷 및 압축 (Header Formatting and Compression)
 
-HTTP message headers carry information as a series of key-value pairs, called
-header fields. For a listing of registered HTTP header fields, see the "Message
-Header Field" registry maintained at
-<https://www.iana.org/assignments/message-headers>.
+HTTP 메시지 헤더는 헤더 필드 (header field)라고 불리는 일련의 키-값 쌍
+(key-value pair) 형태로 정보를 운반한다. 등록된 HTTP 헤더 필드의 나열은
+<https://www.iana.org/assignments/message-headers>에서 관리하는 "Message
+Header Field" 레지스트리를 보라.
 
-Just as in previous versions of HTTP, header field names are strings of ASCII
-characters that are compared in a case-insensitive fashion.  Properties of HTTP
-header field names and values are discussed in more detail in Section 3.2 of
-{{!RFC7230}}, though the wire rendering in HTTP/3 differs.  As in HTTP/2, header
-field names MUST be converted to lowercase prior to their encoding.  A request
-or response containing uppercase header field names MUST be treated as
-malformed.
+기존 HTTP 버전과 마찬가지로, 헤더 필드명은 ASCII 문자로 구성된 문자열이며,
+비교시에는 대소문자를 가리지 않는다. HTTP 헤더 필드명과 해당 필드값의 성질은
+{{!RFC7230}}의 3.2절에서 더욱 자세히 논의된다. 다만 HTTP/3의 데이터 전달 방식
+(wire rendering)은 해당 문서와는 다르다. (역주: wire rendering은 Wire Protocol
+의 렌더링을 가리키는 것임) HTTP/2에서처럼, \["MUST" 헤더 필드명은 반드시 인코딩
+전에 소문자로 변환되어야만 한다.\] \["MUST" 대문자가 들어간 헤더 필드명을
+포함한 요청 또는 응답은 잘못된 형식 (malformed)으로 처리되어야만 한다.\]
 
-As in HTTP/2, HTTP/3 uses special pseudo-header fields beginning with the ':'
-character (ASCII 0x3a) to convey the target URI, the method of the request, and
-the status code for the response.  These pseudo-header fields are defined in
-Section 8.1.2.3 and 8.1.2.4 of {{!RFC7540}}. Pseudo-header fields are not HTTP
-header fields.  Endpoints MUST NOT generate pseudo-header fields other than
-those defined in {{!RFC7540}}.  The restrictions on the use of pseudo-header
-fields in Section 8.1.2.1 of {{!RFC7540}} also apply to HTTP/3.
+HTTP/2와 마찬가지로, HTTP/3는 타겟 URI, 요청 방법, 응답의 상태 코드를 담기 위해
+':' 문자 (ASCII 0x3a)로 시작하는 특수 가상헤더 (pseudo-header) 필드를
+사용한다. 이 가상헤더 필드는 {{!RFC7540}}의 8.1.2.3절과 8.1.2.4절에 정의되어
+있다. \["MUST NOT" 엔드포인트는 {{!RFC7540}}에 정의된 것과 다른 가상헤더 필드를
+절대 생성해서는 안 된다.\] {{!RFC7540}}의 8.1.2.1 절에서 가상헤더 필드의 사용
+시 제약사항은 HTTP/3에도 적용된다.
 
-HTTP/3 uses QPACK header compression as described in [QPACK], a variation of
-HPACK which allows the flexibility to avoid header-compression-induced
-head-of-line blocking.  See that document for additional details.
+HTTP/3은 [QPACK]에 설명된 QPACK 헤더 압축을 사용한다. QPACK 헤더 압축은 HPACK의
+변형으로, 헤더 압축으로 야기되는 head-of-line 차단 (head-of-line blocking)을
+피하기 위한 유연성이 있다. 자세한 내용은 해당 문서를 보라.
 
-An HTTP/3 implementation MAY impose a limit on the maximum size of the header it
-will accept on an individual HTTP message.  This limit is conveyed as a number
-of bytes in the `SETTINGS_MAX_HEADER_LIST_SIZE` parameter. The size of a header
-list is calculated based on the uncompressed size of header fields, including
-the length of the name and value in bytes plus an overhead of 32 bytes for each
-header field.  Encountering a message header larger than this value SHOULD be
-treated as a stream error of type `HTTP_EXCESSIVE_LOAD`.
+\["MAY" HTTP/3 구현은 헤더의 최대 크기를 개별 HTTP 메시지의 수용 여부를 결정할
+제한사항으로 둘 수도 있다.\] 이 제한사항은 `SETTINGS_MAX_HEADER_LIST_SIZE`
+파라미터에 바이트 수로 담긴다. 헤더 리스트의 크기는 압축되지 않은 헤더 필드의
+크기에 기반해 계산되며, 이 크기에는 바이트 단위의 필드명의 길이, 바이트 단위의
+필드값의 길이, 그리고 각 헤더 필드 당 32 바이트의 오버헤드가 더해진다.
+\["SHOULD" 이 값보다 큰 메시지 헤더를 직면하면 `HTTP_EXCESSIVE_LOAD` 타입의
+스트림 오류로 처리된다.\]
+
 
 ### Request Cancellation
 
