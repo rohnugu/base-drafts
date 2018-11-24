@@ -1377,8 +1377,7 @@ Protocol Negotiation (ALPN) Protocol IDs"의 레지스트리에 신규 등록을
   Specification:
   : This document
 
-## QUIC 버전 힌트 Alt-Svc 파라미터의 등록 (Registration of QUIC Version Hint
-Alt-Svc Parameter)
+## QUIC 버전 힌트 Alt-Svc 파라미터의 등록
 
 이 문서는 {{!RFC7838}}에서 설립한 "Hypertext Transfer Protocol (HTTP) Alt-Svc
 Parameter" 레지스트리에서 버전 협상 힌트의 새로운 등록을 생성한다.
@@ -1610,11 +1609,11 @@ HTTP/3은 HTTP/2보다 훨씬 많은 수 (2^62-1)의 스트림의 사용을 허�
 
 HTTP/2의 여러 프레임 개념들은 QUIC에서는 생략될 수 있는데, QUIC 전송이 이
 개념들을 다룰 수 있기 때문이다. 프레임은 이미 한 스트림에 있기 때문에,
-(HTTP/3는) 스트림 번호를 생략할 수 있다. (QUIC의 멀티플렉싱은 본 레이어
-아래에서 일어나기 때문에) 프레임은 멀티플렉싱을 블록할 수 없고, 따라서
-가변-최대-길이 (variable-maximum-length) 패킷의 지원은 제거될 수 있다. 스트림
-중단은 QUIC이 다루므로, END_STREAM 플래그는 필요하지 않다. 이는 일반적인
-프레임 레이아웃에서 Flags 필드의 제거를 허용한다.
+(HTTP/3는) 스트림 번호를 생략할 수 있다. (QUIC의 멀티플렉싱은 본 계층 아래에서
+일어나기 때문에) 프레임은 멀티플렉싱을 블록할 수 없고, 따라서 가변-최대-길이
+(variable-maximum-length) 패킷의 지원은 제거될 수 있다. 스트림 중단은 QUIC이
+다루므로, END_STREAM 플래그는 필요하지 않다. 이는 일반적인 프레임 레이아웃에서
+Flags 필드의 제거를 허용한다.
 
 프레임 페이로드는 주로 {{!RFC7540}}에서 가져왔다. 하지만 QUIC은 HTTP/2에서도
 나타나는 여러 특징 (이를테면 플로우 제어)을 가지고 있다. 이 특징들을 (HTTP/3의)
@@ -1752,65 +1751,64 @@ HTTP/2에서는 설정값으로 고정 길이의 32비트 필드가 사용되었
 설정에 관한 ID들은 단순성을 위해 이미 예약되었다. {{iana-settings}}를 보라.
 
 
-## HTTP/2 Error Codes
+## HTTP/2 에러 코드 (HTTP/2 Error Codes)
 
-QUIC has the same concepts of "stream" and "connection" errors that HTTP/2
-provides. However, there is no direct portability of HTTP/2 error codes.
+QUIC는 HTTP/2가 제공하는 "스트림" 에러 및 "연결" 오류와 동일한 개념을 가진다.
+하지만, HTTP/2의 에러 코드를 바로 이전할 수 있는 이전성은 없다.
 
-The HTTP/2 error codes defined in Section 7 of {{!RFC7540}} map to the HTTP/3
-error codes as follows:
+{{!RFC7540}}의 7절에 정의된 HTTP/2의 에러 코드는 HTTP/3의 에러 코드에 다음과
+같이 매핑된다:
 
 NO_ERROR (0x0):
-: HTTP_NO_ERROR in {{http-error-codes}}.
+: {{http-error-codes}}에서의 HTTP_NO_ERROR.
 
 PROTOCOL_ERROR (0x1):
-: No single mapping.  See new HTTP_MALFORMED_FRAME error codes defined in
-  {{http-error-codes}}.
+: 단일 매핑 없음. {{http-error-codes}}에서 정의된 새 HTTP_MALFORMED_FRAME 에러
+  코드를 보라.
 
 INTERNAL_ERROR (0x2):
-: HTTP_INTERNAL_ERROR in {{http-error-codes}}.
+: {{http-error-codes}}에서의 HTTP_INTERNAL_ERROR.
 
 FLOW_CONTROL_ERROR (0x3):
-: Not applicable, since QUIC handles flow control.  Would provoke a
-  QUIC_FLOW_CONTROL_RECEIVED_TOO_MUCH_DATA from the QUIC layer.
+: QUIC이 플로우 제어를 하므로 활용할 수 없음. QUIC 계층에서
+  QUIC_FLOW_CONTROL_RECEIVED_TOO_MUCH_DATA를 발생시킬 것이다.
 
 SETTINGS_TIMEOUT (0x4):
-: Not applicable, since no acknowledgement of SETTINGS is defined.
+: SETTINGS에 대한 응답 (acknowledgement)가 정의되지 않았으므로 활용할 수 없음.
 
 STREAM_CLOSED (0x5):
-: Not applicable, since QUIC handles stream management.  Would provoke a
-  QUIC_STREAM_DATA_AFTER_TERMINATION from the QUIC layer.
+: QUIC이 스트림 관리를 다루므로 활용할 수 없음. QUIC 계층에서
+  QUIC_STREAM_DATA_AFTER_TERMINATION을 발생시킬 것이다.
 
 FRAME_SIZE_ERROR (0x6):
-: HTTP_MALFORMED_FRAME error codes defined in {{http-error-codes}}.
+: {{http-error-codes}}에서 정의된 HTTP_MALFORMED_FRAME 에러 코드.
 
 REFUSED_STREAM (0x7):
-: Not applicable, since QUIC handles stream management.  Would provoke a
-  STREAM_ID_ERROR from the QUIC layer.
+: QUIC이 스트림 관리를 다루므로 활용할 수 없음. QUIC 계층에서 STREAM_ID_ERROR를
+  발생시킬 것이다.
 
 CANCEL (0x8):
-: HTTP_REQUEST_CANCELLED in {{http-error-codes}}.
+: {{http-error-codes}}에서의 HTTP_REQUEST_CANCELLED.
 
 COMPRESSION_ERROR (0x9):
-: Multiple error codes are defined in [QPACK].
+: [QPACK]에 여러 에러 코드가 정의됨.
 
 CONNECT_ERROR (0xa):
-: HTTP_CONNECT_ERROR in {{http-error-codes}}.
+: {{http-error-codes}}에서의 HTTP_CONNECT_ERROR.
 
 ENHANCE_YOUR_CALM (0xb):
-: HTTP_EXCESSIVE_LOAD in {{http-error-codes}}.
+: {{http-error-codes}}에서의 HTTP_EXCESSIVE_LOAD.
 
 INADEQUATE_SECURITY (0xc):
-: Not applicable, since QUIC is assumed to provide sufficient security on all
-  connections.
+: QUIC 모든 연결에 대한 충분한 보안을 제공한다고 가정하기 때문에 활용할 수 없음.
 
 HTTP_1_1_REQUIRED (0xd):
-: HTTP_VERSION_FALLBACK in {{http-error-codes}}.
+: {{http-error-codes}}에서의 HTTP_VERSION_FALLBACK.
 
-Error codes need to be defined for HTTP/2 and HTTP/3 separately.  See
-{{iana-error-codes}}.
+HTTP/2와 HTTP/3의 에러 코드는 분리되어 정의될 필요가 있다.
+{{iana-error-codes}}를 보라.
 
-# Change Log
+# 변경 사항
 
 > **RFC Editor's Note:**  Please remove this section prior to publication of a
 > final version of this document.
