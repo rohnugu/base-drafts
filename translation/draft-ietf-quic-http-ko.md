@@ -1018,7 +1018,7 @@ PRIORITY 프레임 {{frame-priority}}는 우선시되는 요소를 특정한다.
 특정 요소는 트리의 루트나 다른 요소에 의존할 수 있다. 더 이상 트리에 없는
 요소에의 참조는 트리의 루트로의 참조로 처리된다.
 
-### Placeholders
+### 플레이스홀더 (Placeholders)
 
 HTTP/2의 특정 구현에서 닫힌 또는 사용하지 않는 (unused) 스트림을 '요청의
 상대적인 우선순위를 나타내고자 플레이스홀더 (placeholder)로 사용했다. 하지만,
@@ -1044,7 +1044,7 @@ HTTP/3에서는 서버가 `SETTINGS_NUM_PLACEHOLDERS` 설정을 사용하면, �
 플레이스홀더는 0과 서버가 허용한 플레이스 홀더 수보다 1 작은 수 사이의 범위를
 가지는 ID로 특정된다.
 
-### Priority Tree Maintenance
+### 우선순위 트리 유지하기 (Priority Tree Maintenance)
 
 서버는 우선순위 트리에서 비활성 영역 (inactive region)을 적극적으로 잘라낼
 (prune) 수 있다. 플레이스홀더는 클라이언트가 유지하려고 (retaining) 노력하는
@@ -1086,39 +1086,38 @@ HTTP/3에서는 서버가 `SETTINGS_NUM_PLACEHOLDERS` 설정을 사용하면, �
 
 ## 서버 푸시 (Server Push)
 
-HTTP/3 server push is similar to what is described in HTTP/2 {{!RFC7540}}, but
-uses different mechanisms.
+HTTP/3 서버 푸시는 HTTP/2 {{!RFC7540}}에서 설명한 것과 비슷하지만 다른
+메커니즘을 사용한다.
 
-Each server push is identified by a unique Push ID. The same Push ID can be used
-in one or more PUSH_PROMISE frames (see {{frame-push-promise}}), then included
-with the push stream which ultimately fulfills those promises.
+각 서버 푸시는 유일한 푸시 ID로 식별된다. 동일한 푸시 ID가 하나 이상의
+PUSH_PROMISE 프레임에서 사용될 수 있다 ({{frame-push-promise}}를 보라). 그 뒤
+해당 프레임은 해당 약속을 최종적으로 충족시킬 푸시 스트림에 포함된다.
 
-Server push is only enabled on a connection when a client sends a MAX_PUSH_ID
-frame (see {{frame-max-push-id}}). A server cannot use server push until it
-receives a MAX_PUSH_ID frame. A client sends additional MAX_PUSH_ID frames to
-control the number of pushes that a server can promise. A server SHOULD use Push
-IDs sequentially, starting at 0. A client MUST treat receipt of a push stream
-with a Push ID that is greater than the maximum Push ID as a connection error of
-type HTTP_PUSH_LIMIT_EXCEEDED.
+서버 푸시는 클라이언트가 해당 연결에 MAX_PUSH_ID 프레임을 보낸 때에만
+사용가능하다. ({{frame-max-push-id}}) 서버는 MAX_PUSH_ID 프레임을 받을 때까지
+서버 푸시를 쓸 수 없다. 클라이언트는 서버가 약속할 수 있는 푸시 개수를
+제어하고자 추가로 MAX_PUSH_ID 프레임을 보낸다. \["SHOULD" 서버는 푸시 ID를
+0에서 시작해서 순차적으로 사용해야만 한다.\] \["MUST" 클라이언트는 최대 푸시
+ID보다 큰 푸시 ID를 가진 푸시 스트림을 받았을 때 반드시
+HTTP_PUSH_LIMIT_EXCEEDED 타입의 연결 오류로 처리해야만 한다.
 
-The header of the request message is carried by a PUSH_PROMISE frame (see
-{{frame-push-promise}}) on the request stream which generated the push. This
-allows the server push to be associated with a client request. Ordering of a
-PUSH_PROMISE in relation to certain parts of the response is important (see
-Section 8.2.1 of {{!RFC7540}}).  Promised requests MUST conform to the
-requirements in Section 8.2 of {{!RFC7540}}.
+요청 메시지의 헤더는 PUSH_PROMISE 프레임 ({{frame-push-promise}})에 의해
+이송되며, 푸시를 생성한 요청 스트림을 통해 PUSH_PROMISE 프레임이 전송된다.
+이는 서버 푸시가 특정 클라이언트 요청과 결합되도록 한다. 응답의 특정 부분과
+PUSH_PROMISE의 순서 관계는 중요하다 ({{!RFC7540}}의 8.2.1절을 보라). \["MUST"
+약속된 요청은 반드시 {{!RFC7540}}의 8.2 절의 요구사항을 지켜야만 한다.\]
 
-When a server later fulfills a promise, the server push response is conveyed on
-a push stream (see {{push-streams}}). The push stream identifies the Push ID of
-the promise that it fulfills, then contains a response to the promised request
-using the same format described for responses in {{request-response}}.
+서버가 추후 약속을 충족할 때, 서버 푸시 응답이 푸시 스트림으로 이송된다.
+({{push-streams}}를 보라.) 해당 푸시 스트림은 서버가 충족할 약속의 푸시 ID를
+특정하고, 그 뒤 {{request-response}}에서의 응답과 같은 포맷을 사용해 '약속된
+요청에 대한 응답'을 포함한다.
 
-If a promised server push is not needed by the client, the client SHOULD send a
-CANCEL_PUSH frame. If the push stream is already open or opens after sending the
-CANCEL_PUSH frame, a QUIC STOP_SENDING frame with an appropriate error code can
-also be used (e.g., HTTP_PUSH_REFUSED, HTTP_PUSH_ALREADY_IN_CACHE; see
-{{errors}}). This asks the server not to transfer additional data and indicates
-that it will be discarded upon receipt.
+클라이언트가 약속된 서버 푸시를 필요로 하지 않으면, \["SHOULD" 클라이언트는
+CNACEL_PUSH 프레임을 보내야 한다.\] 푸시 스트림이 이미 열려있거나 CANCEL_PUSH
+프레임을 보낸 후에 열렸다면, 적절한 에러 코드를 가진 QUIC의 STOP_SENDING
+프레임이 사용될 수 있다. (예를 들어 HTTP_PUSH_REPUSED,
+HTTP_PUSH_ALREADY_IN_CACHE 등이 있다. {{errors}}를 보라.) 이는 서버가 추가
+데이터를 보내지 않도록 요청하고, 받는 즉시 폐기할 것임을 알린다.
 
 # 연결 폐쇄 (Connection Closure)
 
