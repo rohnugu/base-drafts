@@ -225,24 +225,22 @@ in the list which it does support, if any.
 
 ## 연결 설립 (Connection Establishment) {#connection-establishment}
 
-HTTP/3 relies on QUIC as the underlying transport.  The QUIC version being used
-MUST use TLS version 1.3 or greater as its handshake protocol.  HTTP/3 clients
-MUST indicate the target domain name during the TLS handshake. This may be done
-using the Server Name Indication (SNI) {{!RFC6066}} extension to TLS or using
-some other mechanism.
+HTTP/3는 QUIC을 기반 전송으로써 의존한다. \["MUST" 사용되는 QUIC 버전은 반드시
+핸드셰이크 프로토콜로 TLS 버전 1.3 이상을 사용해야만 한다.\] \["MUST" HTTP/3
+클라이언트는 TLS 핸드셰이크 동안 타겟 도메인 명을 나타내야 한다.\] 이는 TLS 또는
+다른 어떤 메커니즘에 SNI (Server Name Indication) {{!RFC6066}} 확장을 적용해서
+이루어질 수 있다.
 
-QUIC connections are established as described in {{QUIC-TRANSPORT}}. During
-connection establishment, HTTP/3 support is indicated by selecting the ALPN
-token "hq" in the TLS handshake.  Support for other application-layer protocols
-MAY be offered in the same handshake.
+QUIC 연결은 {{QUIC-TRANSPORT}}에 설명된 대로 설립된다. 연결 설립 과정에서,
+HTTP/3 지원 여부를 TLS 핸드셰이크에 ALPN 토큰 "hq"를 선택해 알린다. \["MAY" 다른
+응용 계층 프로토콜의 지원 여부는 동일 핸드셰이크에서 제공될 수도 있다.\]
 
-While connection-level options pertaining to the core QUIC protocol are set in
-the initial crypto handshake, HTTP/3-specific settings are conveyed in the
-SETTINGS frame. After the QUIC connection is established, a SETTINGS frame
-({{frame-settings}}) MUST be sent by each endpoint as the initial frame of their
-respective HTTP control stream (see {{control-streams}}). The server MUST NOT
-process any request streams or send responses until the client's SETTINGS frame
-has been received.
+핵심 QUIC 프로토콜에 관한 연결 수준 옵션은 초기 암호화 핸드셰이크에 설정되지만,
+HTTP/3에 특화된 설정은 SETTINGS 프레임으로 전달된다. QUIC 연결이 설립된 후에,
+\["MUST" 각 엔드포인트는 반드시 각 HTTP 제어 스트림 ({{control-streams}}를
+보라)의 첫 프레임으로 SETTING 프레임 ({{frame-settings}})을 보내야만 한다.\]
+\["MUST NOT" 서버는 클라이언트의 SETTINGS 프레임을 받을 때까지는 절대로 어떤
+요청 스트림을 처리해서도 안 되며, 절대로 응답을 보내서도 안 된다.\]
 
 ## 연결 재사용 (Connection Reuse)
 
