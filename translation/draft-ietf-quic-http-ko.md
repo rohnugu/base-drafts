@@ -115,10 +115,13 @@ QUIC is described in {{QUIC-TRANSPORT}}.  For a full description of HTTP/2, see
 
 ## Notational Conventions
 
-The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
-"SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this
-document are to be interpreted as described in BCP 14 {{!RFC2119}} {{!RFC8174}}
-when, and only when, they appear in all capitals, as shown here.
+이 문서에서 다음 주요 단어들 "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
+NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY" 및
+"OPTIONAL"은 여기에 있듯이 모두 대문자로 나타난 때에, 그리고 그 때에만 (when,
+and only when) BCP 14 {{!RFC2119}} {{!RFC8174}}에서 설명하듯이 해석되어야 한다.
+
+(역주) 한국어엔 이를 적절히 번역할 방법이 없으므로, 해당 문장 또는 절을 \[\]로
+묶어 \["MUST" 문장\]과 같이 표기하도록 한다.
 
 Field definitions are given in Augmented Backus-Naur Form (ABNF), as defined in
 {{!RFC5234}}.
@@ -132,7 +135,7 @@ frame name will be prefaced with "QUIC."  For example, "QUIC CONNECTION_CLOSE
 frames."  References without this preface refer to frames defined in {{frames}}.
 
 
-# Connection Setup and Management
+# 연결 설정 및 관리 (Connection Setup and Management)
 
 ## Draft Version Identification
 
@@ -219,7 +222,7 @@ A client acting on this header field would drop the reserved version (not
 supported), then attempt to connect to the alternative using the first version
 in the list which it does support, if any.
 
-## Connection Establishment {#connection-establishment}
+## 연결 설립 (Connection Establishment) {#connection-establishment}
 
 HTTP/3 relies on QUIC as the underlying transport.  The QUIC version being used
 MUST use TLS version 1.3 or greater as its handshake protocol.  HTTP/3 clients
@@ -240,7 +243,7 @@ respective HTTP control stream (see {{control-streams}}). The server MUST NOT
 process any request streams or send responses until the client's SETTINGS frame
 has been received.
 
-## Connection Reuse
+## 연결 재사용 (Connection Reuse)
 
 Once a connection exists to a server endpoint, this connection MAY be reused for
 requests with multiple different URI authority components.  The client MAY send
@@ -262,7 +265,7 @@ of {{!RFC7540}}).
 The considerations discussed in Section 9.1 of {{?RFC7540}} also apply to the
 management of HTTP/3 connections.
 
-# Stream Mapping and Usage {#stream-mapping}
+# 스트림 매핑 및 용례 (Stream Mapping and Usage) {#stream-mapping}
 
 A QUIC stream provides reliable in-order delivery of bytes, but makes no
 guarantees about order of delivery with regard to bytes on other streams. On the
@@ -281,7 +284,7 @@ the stream management.  HTTP does not need to do any separate multiplexing when
 using QUIC - data sent over a QUIC stream always maps to a particular HTTP
 transaction or connection context.
 
-## Bidirectional Streams
+## 양방향 스트림 (Bidirectional Streams)
 
 All client-initiated bidirectional streams are used for HTTP requests and
 responses.  A bidirectional stream ensures that the response can be readily
@@ -305,7 +308,7 @@ specify a value of zero for the QUIC transport parameter
 `initial_max_bidi_streams`.
 
 
-## Unidirectional Streams
+## 단방향 스트림 (Unidirectional Streams)
 
 Unidirectional streams, in either direction, are used for a range of purposes.
 The purpose is indicated by a stream type, which is sent as a single byte header
@@ -338,7 +341,7 @@ them.  However, stream types which could modify the state or semantics of
 existing protocol components, including QPACK or other extensions, MUST NOT be
 sent until the peer is known to support them.
 
-###  Control Streams
+### 제어 스트림 (Control Streams)
 
 A control stream is indicated by a stream type of `0x43` (ASCII 'C').  Data on
 this stream consists of HTTP/3 frames, as defined in {{frames}}.
@@ -357,7 +360,7 @@ stream.  This allows either peer to send data as soon they are able.  Depending
 on whether 0-RTT is enabled on the connection, either client or server might be
 able to send stream data first after the cryptographic handshake completes.
 
-### Push Streams
+### 푸시 스트림 (Push Streams)
 
 A push stream is indicated by a stream type of `0x50` (ASCII 'P'), followed by
 the Push ID of the promise that it fulfills, encoded as a variable-length
@@ -381,7 +384,7 @@ Each Push ID MUST only be used once in a push stream header. If a push stream
 header includes a Push ID that was used in another push stream header, the
 client MUST treat this as a connection error of type HTTP_DUPLICATE_PUSH.
 
-### Reserved Stream Types {#stream-grease}
+### 예약된 스트림 타입 (Reserved Stream Types) {#stream-grease}
 
 Stream types of the format `0x1f * N` are reserved to exercise the requirement
 that unknown types be ignored. These streams have no semantic meaning, and can
@@ -680,7 +683,7 @@ value the implementation selects.
 
 Additional settings MAY be defined by extensions to HTTP/3.
 
-#### Initialization
+#### 초기화 (Initialization)
 
 When a 0-RTT QUIC connection is being used, the client's initial requests will
 be sent before the arrival of the server's SETTINGS frame.  Clients MUST store
@@ -825,7 +828,7 @@ MUST be treated as a connection error of type HTTP_MALFORMED_FRAME.
 A server MUST treat a MAX_PUSH_ID frame payload that does not contain a single
 variable-length integer as a connection error of type HTTP_MALFORMED_FRAME.
 
-### Reserved Frame Types {#frame-grease}
+### 예약된 프레임 타입 (Reserved Frame Types) {#frame-grease}
 
 Frame types of the format `0xb + (0x1f * N)` are reserved to exercise the
 requirement that unknown types be ignored ({{extensions}}). These frames have no
