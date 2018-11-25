@@ -288,26 +288,29 @@ HTTP 헤더와 데이터가 QUIC을 통해 보내질 때, QUIC 계층은 스트�
 
 ## 양방향 스트림 (Bidirectional Streams)
 
-All client-initiated bidirectional streams are used for HTTP requests and
-responses.  A bidirectional stream ensures that the response can be readily
-correlated with the request. This means that the client's first request occurs
-on QUIC stream 0, with subsequent requests on stream 4, 8, and so on. In order
-to permit these streams to open, an HTTP/3 client SHOULD send non-zero values
-for the QUIC transport parameters `initial_max_stream_data_bidi_local`. An
-HTTP/3 server SHOULD send non-zero values for the QUIC transport parameters
-`initial_max_stream_data_bidi_remote` and `initial_max_bidi_streams`. It is
-recommended that `initial_max_bidi_streams` be no smaller than 100, so as to not
-unnecessarily limit parallelism.
+클라이언트가 시작한 양방향 스트림은 모두 HTTP 요청과 응답에 쓰인다. 양방향
+스트림은 응답을 해당 요청과 자연스럽고 (readily) 명확하게 (ensure) 연관시킨다.
+이는 클라이언트의 첫 요청이 QUIC의 스트림 0에서 일어나고, 후속 요청은 스트림 4,
+스트림 8, 등등으로 이어짐을 의미한다. (역주: QUIC은 스트림 0에서 암호학적
+핸드셰이크를 하도록 되어 있다. 하지만 핸드셰이크 이후에 데이터를 보낼 수 있는
+걸로 보인다 - 확인이 더 필요하다. 스트림 식별자의 마지막 두 비트는 시작자와
+방향성을 결정하며, 클라이언트가 시작한 양방향 스트림 식별자의 비트는 00이다.)
+해당 스트림이 열리기 위해서, \["SHOULD" HTTP/3 클라이언트는 QUIC의 전송
+파라미터 `initial_max_stream_data_bidi_local`를 0이 아닌 값으로 보내야 한다.\]
+\["SHOULD" HTTP/3 서버는 QUIC의 전송 파라미터
+`initial_max_stream_data_bidi_remote`와 `initial_max_bidi_streams`를 0이 아닌
+값으로 보내야 한다.\] 병렬성을 불필요하게 제약하지 않도록,
+`initial_max_bidi_streams`는 100보다 작지 않도록 하는 것을 추천한다.
 
-These streams carry frames related to the request/response (see
-{{request-response}}). When a stream terminates cleanly, if the last frame on
-the stream was truncated, this MUST be treated as a connection error (see
-HTTP_MALFORMED_FRAME in {{http-error-codes}}).  Streams which terminate abruptly
-may be reset at any point in the frame.
+해당 스트림은 요청과 응답에 대한 프레임을 싣는다. ({{request-response}}를
+보라.) 스트림이 깔끔하게 중단될 때 해당 스트림의 마지막 프레임이 절단되었다면
+(truncated), \["MUST" 이 상황은 반드시 연결 에러로 처리되어야만 한다.
+{{http-error-codes}}의 HTTP_MALFORMED_FRAME를 보라.\] 불시에 (abruptly) 중단한
+스트림은 프레임의 아무 위치에서 리셋될 수도 있다.
 
-HTTP/3 does not use server-initiated bidirectional streams; clients MUST omit or
-specify a value of zero for the QUIC transport parameter
-`initial_max_bidi_streams`.
+HTTP/3은 서버가 시작한 양방향 스트림을 사용하지 않는다. \["MUST" 클라이언트는
+반드시 QUIC 전송 파라미터 `initial_max_bidi_streams`의 값을 생략하거나 또는
+0으로 설정해야만 한다.\]
 
 
 ## 단방향 스트림 (Unidirectional Streams)
