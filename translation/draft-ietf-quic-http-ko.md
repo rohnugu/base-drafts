@@ -304,7 +304,7 @@ HTTP 헤더와 데이터가 QUIC을 통해 보내질 때, QUIC 계층은 스트�
 
 해당 스트림은 요청과 응답에 대한 프레임을 싣는다. ({{request-response}}를
 보라.) 스트림이 깔끔하게 중단될 때 해당 스트림의 마지막 프레임이 절단되었다면
-(truncated), \["MUST" 이 상황은 반드시 연결 에러로 처리되어야만 한다.
+(truncated), \["MUST" 이 상황은 반드시 연결 오류로 처리되어야만 한다.
 {{http-error-codes}}의 HTTP_MALFORMED_FRAME를 보라.\] 불시에 (abruptly) 중단한
 스트림은 프레임의 아무 위치에서 리셋될 수도 있다.
 
@@ -348,22 +348,23 @@ sent until the peer is known to support them.
 
 ### 제어 스트림 (Control Streams)
 
-A control stream is indicated by a stream type of `0x43` (ASCII 'C').  Data on
-this stream consists of HTTP/3 frames, as defined in {{frames}}.
+제어 스트림은 스트림 타입이 `0x43` (ASCII 'C')인지 확인하면 알 수 있다. 이
+스트림의 데이터는 {{frames}}에 정의되었듯이 HTTP/3 프레임으로 구성되어 있다.
 
-Each side MUST initiate a single control stream at the beginning of the
-connection and send its SETTINGS frame as the first frame on this stream.  If
-the first frame of the control stream is any other frame type, this MUST be
-treated as a connection error of type HTTP_MISSING_SETTINGS. Only one control
-stream per peer is permitted; receipt of a second stream which claims to be a
-control stream MUST be treated as a connection error of type
-HTTP_WRONG_STREAM_COUNT.  If the control stream is closed at any point, this
-MUST be treated as a connection error of type HTTP_CLOSED_CRITICAL_STREAM.
+\["MUST" 각 엔드포인트 (side)는 반드시 연결 시작 시점에 단일 제어 스트림을
+시작해야만 한다.\] 또한 \["MUST" 각 엔드포인트는 반드시 해당 스트림의 첫
+프레임으로 SETTINGS 프레임을 보내야만 한다.\] 만약 제어 스트림의 첫 프레임이
+다른 프레임 타입이라면, \["MUST" 반드시 HTTP_MISSING_SETTINGS 타입의 연결
+에러로 처리되어야만 한다.\] 두 번째로 전송 스트림이라 주장하는 스트림이 있다면,
+\["MUST" 이 스트림은 반드시 HTTP_WRONG_STREAM_COUNT 타입의 연결 오류로
+처리되어야만 한다.\] 제어 스트림이 어느 위치에서 (at any point) 닫히면,
+\["MUST" 이 상황은 반드시 HTTP_CLOSED_CRITICAL_STREAM 타입의 연결 오류로
+처리되어야만 한다.\]
 
-A pair of unidirectional streams is used rather than a single bidirectional
-stream.  This allows either peer to send data as soon they are able.  Depending
-on whether 0-RTT is enabled on the connection, either client or server might be
-able to send stream data first after the cryptographic handshake completes.
+(제어 스트림으로는) 단일 양방향 스트림보다는 단방향 스트림 페어가 사용된다.
+이를 통해 상대방이 데이터를 보낼 수 있자마자 보내는 것이 가능해진다. 해당
+연결에 0-RTT가 사용가능한지에 따라, 클라이언트 또는 서버 중 하나는 암호학적
+핸드셰이크가 먼저 완료된 뒤에 스트림 데이터를 보낼 수 있을 것이다.
 
 ### 푸시 스트림 (Push Streams)
 
@@ -690,25 +691,25 @@ Additional settings MAY be defined by extensions to HTTP/3.
 
 #### 초기화 (Initialization)
 
-When a 0-RTT QUIC connection is being used, the client's initial requests will
-be sent before the arrival of the server's SETTINGS frame.  Clients MUST store
-the settings the server provided in the session being resumed and MUST comply
-with stored settings until the server's current settings are received.
-Remembered settings apply to the new connection until the server's SETTINGS
-frame is received.
+0-RTT QUIC 연결이 사용될 때, 클라이언트의 초기 요청은 서버의 SETTINGS 프레임의
+도착 전에 보내질 것이다. \["MUST" 클라이언트는 재개된 (resumed) 세션을 통해
+제공된 적이 있던 서버의 설정을 반드시 저장하고 있어야만 한다.\] \["MUST" 그리고
+클라이언트는 서버의 현재 설정을 받을 때까지는 반드시 저장된 세팅을 준수해야만
+한다.\] 기억된 세팅은 서버의 SETTING 프레임을 받을 때까지 새 연결에 적용된다.
 
-A server can remember the settings that it advertised, or store an
-integrity-protected copy of the values in the ticket and recover the information
-when accepting 0-RTT data. A server uses the HTTP/3 settings values in
-determining whether to accept 0-RTT data.
+서버는 스스로 알린 설정을 기억하고 있을 수도 있으며, 또는 티켓 안에 해당 값들이
+무결성이 보호된 채 복사되도록 저장한 뒤,0-RTT 데이터를 수락할 때 복구할 수도
+있다. 서버는 0-RTT 데이터의 수락 여부를 결정하고자 해당 HTTP/3 설정값을
+사용한다. (역주: QUIC의 전송 파라미터에서도 유사한 문구가 있다.)
 
-A server MAY accept 0-RTT and subsequently provide different settings in its
-SETTINGS frame. If 0-RTT data is accepted by the server, its SETTINGS frame MUST
-NOT reduce any limits or alter any values that might be violated by the client
-with its 0-RTT data.
+\["MAY" 서버는 0-RTT (데이터)를 수용할 수 있다.\] \["MAY" 그 후에 서버의
+SETTINGS 프레임으로 다른 설정을 제공할 수도 있다.\] 서버가 0-RTT 데이터를
+수락하면, \["MUST NOT" 서버의 SETTING 프레임은 (0-RTT를 통해 알 수 있는)
+제한사항을 줄이거나 해당 0-RTT 데이터를 사용하는 클라이언트에 의해 위배될 수
+있는 값을 대체하는 행위를 절대로 해서는 안 된다.\]
 
-When a 1-RTT QUIC connection is being used, the client MUST NOT send requests
-prior to receiving and processing the server's SETTINGS frame.
+1-RTT QUIC 연결이 사용될 때에는  \["MUST NOT" 클라이언트는 서버의 SETTINGS
+프레임을 받아서 처리하기 전까지 요청을 절대로 보내서는 안 된다.\]
 
 ### PUSH_PROMISE {#frame-push-promise}
 
@@ -1001,9 +1002,9 @@ TCP 연결은 각 상대방에 의해 닫힐 수 있다. 클라이언트가 요�
 송신 스트림을 닫지 않아야 한다.\]
 
 TCP 연결 오류는 QUIC의 RESET_STREAM 프레임으로 알려진다. 프록시는 TCP 연결의
-어떤 에러도 처리하며, 이는 RSB 비트가 설정된 TCP 세그먼트를 받는 상황도
-포함하는데 이는 HTTP_CONNECT_ERROR ({{http-error-codes}}) 타입의 스트림 에러로
-처리된다. 마찬가지로, 프록시는 스트림이나 QUIC 연결에 에러를 감지하면 \["MUST"
+어떤 오류도 처리하며, 이는 RSB 비트가 설정된 TCP 세그먼트를 받는 상황도
+포함하는데 이는 HTTP_CONNECT_ERROR ({{http-error-codes}}) 타입의 스트림 오류로
+처리된다. 마찬가지로, 프록시는 스트림이나 QUIC 연결에 오류를 감지하면 \["MUST"
 RSB 비트가 설정된 TCP 세그먼트를 (원 서버로) 반드시 보내야만 한다.\]
 
 ## 요청의 우선순위 결정법 (Request Prioritization) {#priority}
@@ -1270,9 +1271,9 @@ HTTP/3은 프로토콜 확장을 허용한다. 이 절에서 설명된 한계점
 한다.\]
 
 
-# 에러 처리 (Error Handling) {#errors}
+# 오류 처리 (Error Handling) {#errors}
 
-QUIC은 응용이 에러에 직면했을 때 갑자기 개별 스트림이나 전체 연결을 중단
+QUIC은 응용이 오류에 직면했을 때 갑자기 개별 스트림이나 전체 연결을 중단
 (리셋)하는 것을 허용한다. 이를 각각 "스트림 오류"와 "연결 오류"라고 하며,
 {{QUIC-TRANSPORT}}에서 상세히 설명한다. \["MAY" 엔드포인트는 스트림 오류를 연결
 오류처럼 다룰 수도 있다.
@@ -1347,7 +1348,7 @@ HTTP_UNEXPECTED_FRAME (0x0013):
 
 HTTP_GENERAL_PROTOCOL_ERROR (0x00FF):
 : 상대방이 특정 에러 코드와 매치되지는 않는 프로토콜 요구사항을 위반했거나,
-  (에러가 발생했지만) 엔드포인트가 더 구체적인 에러 코드를 사용하기를 거부함.
+  (오류가 발생했지만) 엔드포인트가 더 구체적인 에러 코드를 사용하기를 거부함.
 
 HTTP_MALFORMED_FRAME (0x01XX):
 : 특정 프레임 타입에서의 오류. 에러 코드의 마지막 바이트로 프레임 타입이
@@ -1766,7 +1767,7 @@ HTTP/2에서는 설정값으로 고정 길이의 32비트 필드가 사용되었
 
 ## HTTP/2 에러 코드 (HTTP/2 Error Codes)
 
-QUIC는 HTTP/2가 제공하는 "스트림" 에러 및 "연결" 오류와 동일한 개념을 가진다.
+QUIC는 HTTP/2가 제공하는 "스트림" 오류 및 "연결" 오류와 동일한 개념을 가진다.
 하지만, HTTP/2의 에러 코드를 바로 이전할 수 있는 이전성은 없다.
 
 {{!RFC7540}}의 7절에 정의된 HTTP/2의 에러 코드는 HTTP/3의 에러 코드에 다음과
