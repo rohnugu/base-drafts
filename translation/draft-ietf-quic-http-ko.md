@@ -244,25 +244,29 @@ HTTP/3에 특화된 설정은 SETTINGS 프레임으로 전달된다. QUIC 연결
 
 ## 연결 재사용 (Connection Reuse)
 
-Once a connection exists to a server endpoint, this connection MAY be reused for
-requests with multiple different URI authority components.  The client MAY send
-any requests for which the client considers the server authoritative.
+연결이 서버 엔드포인트에 존재하면, \["MAY" 해당 연결은 서로 다른 URI 담당
+컴포넌트 (authority components)를 갖는 요청에도 재사용할 수도 있다.\] (역주:
+URI autority component는 URI를 구성하는 컴포넌트 중 사용자명, 호스트, 포트
+컴포넌트를 합친 컴포넌트를 말한다. TCP/IP 스타일로 설명하면, 5 튜플로 정해진
+TCP 연결로 서로 다른 가상 서버에 접속할 수 있도록 허용한다는 의미이다.)
+\["MAY" 클라이언트는 해당 서버가 담당 (authoritative)할 것이라 여겨지는 임의의
+요청을 해당 서버에 보낼 수도 있다.\]
 
-An authoritative HTTP/3 endpoint is typically discovered because the client has
-received an Alt-Svc record from the request's origin which nominates the
-endpoint as a valid HTTP Alternative Service for that origin.  As required by
-{{RFC7838}}, clients MUST check that the nominated server can present a valid
-certificate for the origin before considering it authoritative. Clients MUST NOT
-assume that an HTTP/3 endpoint is authoritative for other origins without an
-explicit signal.
+담당 (authoritative) HTTP/3 엔드포인트는 보통 클라이언트가 원 서버 (origin)에
+요청을 보냈을 때, 클라이언트가 원 서버로부터 '해당 엔드포인트를 유효한 (valid)
+HTTP 대체 서비스 (HTTP Alternative Service)로 지명함'을 알리는 Alt-Svc 레코드를
+받아서 알려진다. {{RFC7838}}에서 요구한 것처럼, 클라이언트는 지명된 서버를
+담당이라고 간주하기 전에, \["MUST" 지명된 서버가 원 서버에 대한 유효한 인증서를
+보일 수 있는지 반드시 체크해야만 한다.\] \["MUST NOT" 클라이언트는 HTTP/3
+엔드포인트를 명시적인 신호가 없는데도 다른 원 서버들에 대한 담당이라고
+가정해서는 절대로 안 된다.\]
 
-A server that does not wish clients to reuse connections for a particular origin
-can indicate that it is not authoritative for a request by sending a 421
-(Misdirected Request) status code in response to the request (see Section 9.1.2
-of {{!RFC7540}}).
+클라이언트가 특정 원 서버에 대한 연결을 재사용하는 상황을 원하지 않는 서버는
+해당 요청에 대한 응답으로 421 (Misdirected Request; 잘못 보내진 요청) 상태
+코드를 보내서 담당이 아님을 알릴 수 있다. ({{!RFC7540}}의 9.1.2절을 보라).
 
-The considerations discussed in Section 9.1 of {{?RFC7540}} also apply to the
-management of HTTP/3 connections.
+{{?RFC7540}}의 9.1절에서 논의한 고려 사항은 HTTP/3 연결의 관리에도 적용될 수
+있다.
 
 # 스트림 매핑 및 용례 (Stream Mapping and Usage) {#stream-mapping}
 
@@ -1351,7 +1355,7 @@ HTTP_MALFORMED_FRAME (0x01XX):
 
 # 보안 고려 사항 (Security Considerations)
 
-HTTP/3의 보안 고려 사항은 TLS를 같이 쓰는 HTTP/2의 보안 고려사항과 비교되어야
+HTTP/3의 보안 고려 사항은 TLS를 같이 쓰는 HTTP/2의 보안 고려 사항과 비교되어야
 한다. HTTP/2가 연결이 트래픽 분석에 대항하도록 PADDING 프레임 및 다른 프레임의
 Padding 필드를 활용할 때, HTTP/3은 QUIC의 PADDING 프레임에 의존하거나
 {{frame-grease}}와 {{stream-grease}}에 논의된 예약된 프레임과 스트림 타입을
