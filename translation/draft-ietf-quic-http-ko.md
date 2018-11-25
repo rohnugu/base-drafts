@@ -270,22 +270,21 @@ HTTP 대체 서비스 (HTTP Alternative Service)로 지명함'을 알리는 Alt-
 
 # 스트림 매핑 및 용례 (Stream Mapping and Usage) {#stream-mapping}
 
-A QUIC stream provides reliable in-order delivery of bytes, but makes no
-guarantees about order of delivery with regard to bytes on other streams. On the
-wire, data is framed into QUIC STREAM frames, but this framing is invisible to
-the HTTP framing layer. The transport layer buffers and orders received QUIC
-STREAM frames, exposing the data contained within as a reliable byte stream to
-the application.
+QUIC 스트림은 신뢰적이고, 정렬된 바이트 전송 (reliable in-order delivery of
+bytes)을 제공하지만, 다른 스트림에 속한 바이트의 전송 순서는 전혀 보장하지
+않는다. 선로 (wire)에는 데이터가 QUIC의 STREAM 프레임으로 나뉘지만 (framed),
+이 프레이밍 (framing)은 HTTP의 프레이밍 계층에는 보이지 않는다. 전송 계층은
+QUIC의 STREAM 프레임을 받아서 버퍼링하고 정렬하며, 이를 통해 응용에는 신뢰적인
+바이트 스트림 안에 포함된 데이터를 노출한다.
 
-QUIC streams can be either unidirectional, carrying data only from initiator to
-receiver, or bidirectional.  Streams can be initiated by either the client or
-the server.  For more detail on QUIC streams, see Section 2 of
-{{QUIC-TRANSPORT}}.
+QUIC 스트림은 시작자에서 수신자로만 데이터를 보내는 단방향 스트림, 또는 양방향
+스트림 중 하나일 수 있다. 스트림은 서버나 클라이언트 중 하나에 의해 시작될 수
+있다. QUIC 스트림에 대한 자세한 상세는 {{QUIC-TRANSPORT}}의 2절을 보라.
 
-When HTTP headers and data are sent over QUIC, the QUIC layer handles most of
-the stream management.  HTTP does not need to do any separate multiplexing when
-using QUIC - data sent over a QUIC stream always maps to a particular HTTP
-transaction or connection context.
+HTTP 헤더와 데이터가 QUIC을 통해 보내질 때, QUIC 계층은 스트림 관리의 대부분을
+다루게 된다. HTTP는 QUIC을 사용할 때 따로 멀티플렉싱을 할 필요가 없다. QUIC
+스트림을 통해 보내진 데이터는 언제나 특정 HTTP 트랜젝션 또는 연결 컨텍스트
+(context)에 매핑되어 있다.
 
 ## 양방향 스트림 (Bidirectional Streams)
 
