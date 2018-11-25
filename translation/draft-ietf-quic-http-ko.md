@@ -113,7 +113,7 @@ QUIC is described in {{QUIC-TRANSPORT}}.  For a full description of HTTP/2, see
 {{!RFC7540}}.
 
 
-## Notational Conventions
+## 표기 관례 (Notational Conventions)
 
 이 문서에서 다음 주요 단어들 "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL
 NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY" 및
@@ -123,16 +123,17 @@ and only when) BCP 14 {{!RFC2119}} {{!RFC8174}}에서 설명하듯이 해석되�
 (역주) 한국어엔 이를 적절히 번역할 방법이 없으므로, 해당 문장 또는 절을 \[\]로
 묶어 \["MUST" 문장\]과 같이 표기하도록 한다.
 
-Field definitions are given in Augmented Backus-Naur Form (ABNF), as defined in
-{{!RFC5234}}.
+필드 정의는 {{!RFC5234}}에 정의되었듯 ABNF (Augmented Backus-Naur Form)로
+주어진다.
 
-This document uses the variable-length integer encoding from
-{{QUIC-TRANSPORT}}.
+본 문서는 {{QUIC-TRANSPORT}}에서 가져온 가변 길이 인코딩 (variable-length
+integer encoding)을 사용한다.
 
-Protocol elements called "frames" exist in both this document and
-{{QUIC-TRANSPORT}}. Where frames from {{QUIC-TRANSPORT}} are referenced, the
-frame name will be prefaced with "QUIC."  For example, "QUIC CONNECTION_CLOSE
-frames."  References without this preface refer to frames defined in {{frames}}.
+"프레임"이라고 불리는 프로토콜 요소 본 문서와 {{QUIC-TRANSPORT}} 모두에 있다.
+(본 문서에서) {{QUIC-TRANSPORT}}에서의 프레임이 참조될 때에는 프레임 이름의
+앞에 "QUIC"이 붙을 (prefaced with) 것이다. 예를 들어, "QUIC CONNECTION_CLOSE
+프레임"이라고 쓴다. 이 접두어가 붙지 않은 참조는 {{frames}}에 정의된 프레임을
+가리킨다.
 
 
 # 연결 설정 및 관리 (Connection Setup and Management)
