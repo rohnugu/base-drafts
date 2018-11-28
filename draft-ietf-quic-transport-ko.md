@@ -1,1 +1,1 @@
-translation/draft-ietf-quic-transport-ko.md
+./translation/draft-ietf-quic-transport-ko.md
