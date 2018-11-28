@@ -239,8 +239,6 @@ HTTP/3 지원 여부를 TLS 핸드셰이크에 ALPN 토큰 "hq"를 선택해 알
 HTTP/3에 특화된 설정은 SETTINGS 프레임으로 전달된다. QUIC 연결이 설립된 후에,
 \["MUST" 각 엔드포인트는 반드시 각 HTTP 제어 스트림 ({{control-streams}}를
 보라)의 첫 프레임으로 SETTING 프레임 ({{frame-settings}})을 보내야만 한다.\]
-\["MUST NOT" 서버는 클라이언트의 SETTINGS 프레임을 받을 때까지는 절대로 어떤
-요청 스트림을 처리해서도 안 되며, 절대로 응답을 보내서도 안 된다.\]
 
 ## 연결 재사용 (Connection Reuse)
 
@@ -330,7 +328,8 @@ header is determined by the stream type.
 
 Some stream types are reserved ({{stream-grease}}).  Two stream types are
 defined in this document: control streams ({{control-streams}}) and push streams
-({{push-streams}}).  Other stream types can be defined by extensions to HTTP/3.
+({{push-streams}}).  Other stream types can be defined by extensions to HTTP/3;
+see {{extensions}} for more details.
 
 Both clients and servers SHOULD send a value of three or greater for the QUIC
 transport parameter `initial_max_uni_streams`.
@@ -621,10 +620,10 @@ identifier" and a "setting value".
 
 SETTINGS parameters are not negotiated; they describe characteristics of the
 sending peer, which can be used by the receiving peer. However, a negotiation
-can be implied by the use of SETTINGS -- a peer uses SETTINGS to advertise a set
-of supported values. The recipient can then choose which entries from this list
-are also acceptable and proceed with the value it has chosen. (This choice could
-be announced in a field of an extension frame, or in its own value in SETTINGS.)
+can be implied by the use of SETTINGS -- each peer uses SETTINGS to advertise a
+set of supported values. The definition of the setting would describe how each
+peer combines the two sets to conclude which choice will be used.  SETTINGS does
+not provide a mechanism to identify when the choice takes effect.
 
 Different values for the same parameter can be advertised by each peer. For
 example, a client might be willing to consume a very large response header,
@@ -672,11 +671,12 @@ HTTP_MALFORMED_FRAME.
 
 The following settings are defined in HTTP/3:
 
-  SETTINGS_NUM_PLACEHOLDERS (0x3):
-  : This value SHOULD be non-zero.  The default value is 16.
-
   SETTINGS_MAX_HEADER_LIST_SIZE (0x6):
-  : The default value is unlimited.
+  : The default value is unlimited.  See {{header-formatting}} for usage.
+
+  SETTINGS_NUM_PLACEHOLDERS (0x8):
+  : The default value is 0.  However, this value SHOULD be set to a non-zero
+    value by servers.  See {{placeholders}} for usage.
 
 Setting identifiers of the format `0x?a?a` are reserved to exercise the
 requirement that unknown identifiers be ignored.  Such settings have no defined
@@ -687,15 +687,21 @@ receipt.
 Because the setting has no defined meaning, the value of the setting can be any
 value the implementation selects.
 
-Additional settings MAY be defined by extensions to HTTP/3.
+Additional settings MAY be defined by extensions to HTTP/3; see {{extensions}}
+for more details.
 
 #### 초기화 (Initialization)
 
-0-RTT QUIC 연결이 사용될 때, 클라이언트의 초기 요청은 서버의 SETTINGS 프레임의
-도착 전에 보내질 것이다. \["MUST" 클라이언트는 재개된 (resumed) 세션을 통해
-제공된 적이 있던 서버의 설정을 반드시 저장하고 있어야만 한다.\] \["MUST" 그리고
-클라이언트는 서버의 현재 설정을 받을 때까지는 반드시 저장된 세팅을 준수해야만
-한다.\] 기억된 세팅은 서버의 SETTING 프레임을 받을 때까지 새 연결에 적용된다.
+\["MUST NOT" HTTP 구현은 상대방의 설정에 대해 현재 알고 있는 바에 따르면
+유효하지 않은 것으로 보이는 프레임이나 요청을 절대로 보내선 안 된다.\] 모든
+설정은 초기값으로 시작해야 하며 SETTINGS 프레임의 수신에 따라 갱신된다. 서버의
+경우, 각 클라이언트 설정에 대한 초기값은 기본값 (default value)이다.
+
+1-RTT QUIC 연결을 사용하는 클라이언트의 경우, 각 서버 설정의 초기값은
+기본값이다. 0-RTT QUIC 연결이 사용되는 때에는, 각 서버 설정의 초기값은 직전
+세션에 사용되었던 값이다. \["MUST" 클라이언트는 재개하려는 세션에서 (과거에)
+서버가 제공했던 설정을 반드시 저장해야만 한다.\] 또한, \["MUST" 클라이언트는
+현재 서버 설정을 수신할 때까지 반드시 저장해둔 설정을 준수해야만 한다.\]
 
 서버는 스스로 알린 설정을 기억하고 있을 수도 있으며, 또는 티켓 안에 해당 값들이
 무결성이 보호된 채 복사되도록 저장한 뒤,0-RTT 데이터를 수락할 때 복구할 수도
@@ -707,9 +713,6 @@ SETTINGS 프레임으로 다른 설정을 제공할 수도 있다.\] 서버가 0
 수락하면, \["MUST NOT" 서버의 SETTING 프레임은 (0-RTT를 통해 알 수 있는)
 제한사항을 줄이거나 해당 0-RTT 데이터를 사용하는 클라이언트에 의해 위배될 수
 있는 값을 대체하는 행위를 절대로 해서는 안 된다.\]
-
-1-RTT QUIC 연결이 사용될 때에는  \["MUST NOT" 클라이언트는 서버의 SETTINGS
-프레임을 받아서 처리하기 전까지 요청을 절대로 보내서는 안 된다.\]
 
 ### PUSH_PROMISE {#frame-push-promise}
 
@@ -905,7 +908,7 @@ STOP_SENDING 프레임을 야기해서, 완전한 응답을 송신한 뒤에, �
 중단하여야 한다.\]
 
 
-### 헤더 포맷 및 압축 (Header Formatting and Compression)
+### 헤더 포맷 및 압축 (Header Formatting and Compression) {#header-formatting}
 
 HTTP 메시지 헤더는 헤더 필드 (header field)라고 불리는 일련의 키-값 쌍
 (key-value pair) 형태로 정보를 운반한다. 등록된 HTTP 헤더 필드의 나열은
@@ -932,13 +935,12 @@ HTTP/3은 [QPACK]에 설명된 QPACK 헤더 압축을 사용한다. QPACK 헤더
 피하기 위한 유연성이 있다. 자세한 내용은 해당 문서를 보라.
 
 \["MAY" HTTP/3 구현은 헤더의 최대 크기를 개별 HTTP 메시지의 수용 여부를 결정할
-제한사항으로 둘 수도 있다.\] 이 제한사항은 `SETTINGS_MAX_HEADER_LIST_SIZE`
-파라미터에 바이트 수로 담긴다. 헤더 리스트의 크기는 압축되지 않은 헤더 필드의
-크기에 기반해 계산되며, 이 크기에는 바이트 단위의 필드명의 길이, 바이트 단위의
-필드값의 길이, 그리고 각 헤더 필드 당 32 바이트의 오버헤드가 더해진다.
-\["SHOULD" 이 값보다 큰 메시지 헤더를 직면하면 `HTTP_EXCESSIVE_LOAD` 타입의
-스트림 오류로 처리된다.\]
-
+제한사항으로 둘 수도 있다.\] \["SHOULD" 이 값보다 큰 메시지 헤더를 직면하면
+`HTTP_EXCESSIVE_LOAD` 타입의 스트림 오류로 처리된다.\] 구현이 상대방에게 이
+제한사항을 알리고 싶으면, 그 제한사항은 `SETTINGS_MAX_HEADER_LIST_SIZE`
+파라미터에 바이트 수로 담길 수 있다. 헤더 리스트의 크기는 압축되지 않은 헤더
+필드의 크기에 기반해 계산되며, 이 크기에는 바이트 단위의 필드명의 길이, 바이트
+단위의 필드값의 길이, 그리고 각 헤더 필드 당 32 바이트의 오버헤드가 더해진다.
 
 ### 요청 취소 (Request Cancellation)
 
@@ -1485,10 +1487,11 @@ Specification:
 | Setting Name                 | Code   | Specification             |
 | ---------------------------- | :----: | ------------------------- |
 | Reserved                     | 0x2    | N/A                       |
-| NUM_PLACEHOLDERS             | 0x3    | {{settings-parameters}}   |
+| Reserved                     | 0x3    | N/A                       |
 | Reserved                     | 0x4    | N/A                       |
 | Reserved                     | 0x5    | N/A                       |
 | MAX_HEADER_LIST_SIZE         | 0x6    | {{settings-parameters}}   |
+| NUM_PLACEHOLDERS             | 0x8    | {{settings-parameters}}   |
 | ---------------------------- | ------ | ------------------------- |
 
 추가적으로, 각 `?`이 4비트 값이라고 할 때 `0x?a?a` 꼴의 각 코드 (즉, `0x0a0a`,
