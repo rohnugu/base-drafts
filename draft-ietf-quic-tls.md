@@ -112,16 +112,16 @@ code and issues list for this draft can be found at
 
 # Introduction
 
-This document describes how QUIC {{QUIC-TRANSPORT}} is secured using TLS version
-1.3 {{!TLS13=RFC8446}}.  TLS 1.3 provides critical
-latency improvements for connection establishment over previous versions.
-Absent packet loss, most new connections can be established and secured within a
-single round trip; on subsequent connections between the same client and server,
-the client can often send application data immediately, that is, using a zero
-round trip setup.
+This document describes how QUIC {{QUIC-TRANSPORT}} is secured using TLS
+{{!TLS13=RFC8446}}.
 
-This document describes how the standardized TLS 1.3 acts as a security
-component of QUIC.
+TLS 1.3 provides critical latency improvements for connection establishment over
+previous versions.  Absent packet loss, most new connections can be established
+and secured within a single round trip; on subsequent connections between the
+same client and server, the client can often send application data immediately,
+that is, using a zero round trip setup.
+
+This document describes how TLS acts as a security component of QUIC.
 
 
 # Notational Conventions
@@ -133,7 +133,8 @@ when, and only when, they appear in all capitals, as shown here.
 
 This document uses the terminology established in {{QUIC-TRANSPORT}}.
 
-For brevity, the acronym TLS is used to refer to TLS 1.3.
+For brevity, the acronym TLS is used to refer to TLS 1.3, though a newer version
+could be used (see {{tls-version}}).
 
 
 ## TLS Overview
@@ -178,7 +179,7 @@ learn and authenticate an identity for the client.  TLS supports X.509
 The TLS key exchange is resistant to tampering by attackers and it produces
 shared secrets that cannot be controlled by either participating peer.
 
-TLS 1.3 provides two basic handshake modes of interest to QUIC:
+TLS provides two basic handshake modes of interest to QUIC:
 
  * A full 1-RTT handshake in which the client is able to send application data
    after one round trip and the server immediately responds after receiving the
@@ -189,9 +190,9 @@ TLS 1.3 provides two basic handshake modes of interest to QUIC:
    application data can be replayed by an attacker so it MUST NOT carry a
    self-contained trigger for any non-idempotent action.
 
-A simplified TLS 1.3 handshake with 0-RTT application data is shown in
-{{tls-full}}.  Note that this omits the EndOfEarlyData message, which is not
-used in QUIC (see {{remove-eoed}}).
+A simplified TLS handshake with 0-RTT application data is shown in {{tls-full}}.
+Note that this omits the EndOfEarlyData message, which is not used in QUIC (see
+{{remove-eoed}}).
 
 ~~~
     Client                                             Server
@@ -232,7 +233,7 @@ server.
 # Protocol Overview
 
 QUIC {{QUIC-TRANSPORT}} assumes responsibility for the confidentiality and
-integrity protection of packets.  For this it uses keys derived from a TLS 1.3
+integrity protection of packets.  For this it uses keys derived from a TLS
 handshake {{!TLS13}}, but instead of carrying TLS records over QUIC (as with
 TCP), TLS Handshake and Alert messages are carried directly over the QUIC
 transport, which takes over the responsibilities of the TLS record layer, as
@@ -257,8 +258,8 @@ shown below.
 ~~~~
 
 
-QUIC also relies on TLS 1.3 for authentication and negotiation of parameters
-that are critical to security and performance.
+QUIC also relies on TLS for authentication and negotiation of parameters that
+are critical to security and performance.
 
 Rather than a strict layering, these two protocols are co-dependent: QUIC uses
 the TLS handshake; TLS uses the reliability, ordered delivery, and record
@@ -311,7 +312,7 @@ chunk of data that is produced by TLS is associated with the set of keys that
 TLS is currently using.  If QUIC needs to retransmit that data, it MUST use the
 same keys even if TLS has already updated to newer keys.
 
-One important difference between TLS 1.3 records (used with TCP) and QUIC CRYPTO
+One important difference between TLS records (used with TCP) and QUIC CRYPTO
 frames is that in QUIC multiple frames may appear in the same QUIC packet as
 long as they are associated with the same encryption level. For instance, an
 implementation might bundle a Handshake message and an ACK for some Handshake
@@ -453,6 +454,18 @@ indicates to QUIC that it is now reading or writing with keys at that encryption
 level.  These events are not asynchronous; they always occur immediately after
 TLS is provided with new handshake bytes, or after TLS produces handshake bytes.
 
+TLS provides QUIC with three items as a new encryption level becomes available:
+
+* A secret
+
+* An Authenticated Encryption with Associated Data (AEAD) function
+
+* A Key Derivation Function (KDF)
+
+These values are based on the values that TLS negotiates and are used by QUIC to
+generate packet and header protection keys (see {{packet-protection}} and
+{{header-protect}}).
+
 If 0-RTT is possible, it is ready after the client sends a TLS ClientHello
 message or the server receives that message.  After providing a QUIC client with
 the first handshake bytes, the TLS stack might signal the change to 0-RTT
@@ -516,7 +529,7 @@ Handshake Received
 {: #exchange-summary title="Interaction Summary between QUIC and TLS"}
 
 
-## TLS Version
+## TLS Version {#tls-version}
 
 This document describes how TLS 1.3 {{!TLS13}} is used with QUIC.
 
@@ -710,14 +723,19 @@ based on the client's initial Destination Connection ID, as described in
 {{initial-secrets}}.
 
 The keys used for packet protection are computed from the TLS secrets using the
-method described in Section 7.3 of {{!TLS13}}), with the labels "quic key" and
-"quic iv" in place of the labels used by TLS (that is, "key" and "iv"
-respectively).  Using these labels provides key separation between QUIC and TLS,
-see {{key-diversity}}.
+KDF provided by TLS.  In TLS 1.3, the HKDF-Expand-Label function described in
+Section 7.1 of {{!TLS13}}) is used, using the hash function from the negotiated
+cipher suite.  Other versions of TLS MUST provide a similar function in order to
+be used QUIC.
 
-The HKDF-Expand-Label function is also used to derive the initial secrets (see
-{{initial-secrets}}) and to derive a packet number protection key (the "quic hp"
-label, see {{header-protect}}).
+The current encryption level secret and the label "quic key" are input to the
+KDF to produce the AEAD key; the label "quic iv" is used to derive the IV, see
+{{aead}}.  The packet number protection key uses the "quic hp" label, see
+{{header-protect}}).  Using these labels provides key separation between QUIC
+and TLS, see {{key-diversity}}.
+
+The KDF used for initial secrets is always the HKDF-Expand-Label function from
+TLS 1.3 (see {{initial-secrets}}).
 
 
 ## Initial Secrets {#initial-secrets}
@@ -753,9 +771,8 @@ thus ensuring that the keys are different for each version of QUIC. This
 prevents a middlebox that only recognizes one version of QUIC from seeing or
 modifying the contents of handshake packets from future versions.
 
-The HKDF function defined in TLS 1.3 MUST be used even in case the minimum TLS
-version that the endpoint is willing to use is greater, so as to assure that
-the peer can decrypt the packet.
+The HKDF-Expand-Label function defined in TLS 1.3 MUST be used for Initial
+packets even where the TLS versions offered do not include TLS 1.3.
 
 Note:
 
@@ -784,9 +801,12 @@ connection ID in the client's first Initial packet (see {{initial-secrets}}).
 This provides protection against off-path attackers and robustness against QUIC
 version unaware middleboxes, but not against on-path attackers.
 
-All ciphersuites currently defined for TLS 1.3 - and therefore QUIC - have a
-16-byte authentication tag and produce an output 16 bytes larger than their
-input.
+QUIC can use any of the ciphersuites defined in {{!TLS13}} with the exception of
+TLS_AES_128_CCM_8_SHA256.  The AEAD for that ciphersuite, AEAD_AES_128_CCM_8
+{{?CCM=RFC6655}}, does not produce a large enough authentication tag for use
+with the header protection designs provided (see {{header-protect}}).  All other
+ciphersuites defined in {{!TLS13}} have a 16-byte authentication tag and produce
+an output 16 bytes larger than their input.
 
 The key and IV for the packet are computed as described in {{protection-keys}}.
 The nonce, N, is formed by combining the packet protection IV with the packet
@@ -1075,8 +1095,7 @@ packet with a matching KEY_PHASE.
 
 A receiving endpoint detects an update when the KEY_PHASE bit does not match
 what it is expecting.  It creates a new secret (see Section 7.2 of {{!TLS13}})
-and the corresponding read key and IV using the same HKDF-Expand-Label function
-used in TLS.
+and the corresponding read key and IV using the KDF function provided by TLS.
 
 If the packet can be decrypted and authenticated using the updated key and IV,
 then the keys the endpoint uses for packet protection are also updated.  The
